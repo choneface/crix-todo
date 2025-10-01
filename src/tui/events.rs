@@ -34,7 +34,7 @@ pub fn poll_input(timeout: Duration, mode: InputMode) -> std::io::Result<InputEv
 
 fn match_key_code_for_normal_mode(code: KeyCode) -> InputEvent {
     match code {
-        KeyCode::Char('q') => InputEvent::Quit,
+        KeyCode::Esc => InputEvent::Quit,
         KeyCode::Char('j') => InputEvent::Down,
         KeyCode::Char('k') => InputEvent::Up,
         KeyCode::Left => InputEvent::Left,
@@ -42,7 +42,6 @@ fn match_key_code_for_normal_mode(code: KeyCode) -> InputEvent {
         KeyCode::Enter => InputEvent::ToggleDone,
         KeyCode::Char(' ') => InputEvent::ToggleExpand,
         KeyCode::Char('e') => InputEvent::EnableEditing,
-        KeyCode::Esc => InputEvent::DisableEditing,
         KeyCode::Backspace => InputEvent::Backspace,
         KeyCode::Char('p') => InputEvent::PromotePriority,
         KeyCode::Char('l') => InputEvent::DemotePriority,

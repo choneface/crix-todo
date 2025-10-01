@@ -50,7 +50,7 @@ fn render_keybindings(f: &mut Frame, rect: Rect) {
         Span::raw("[e] Edit    "),
         Span::raw("[⌫] Delete    "),
         Span::raw("[p/l] Toggle Priority    "),
-        Span::raw("[q] Quit"),
+        Span::raw("[Esc] Quit"),
     ]))
     .block(Block::default());
 
