@@ -44,7 +44,7 @@ fn render_todo_list(f: &mut Frame, app: &App, chunk: Rect) {
 
 fn render_keybindings(f: &mut Frame, rect: Rect) {
     let header = Paragraph::new(Line::from(vec![
-        Span::raw("[↑/↓] Move    "),
+        Span::raw("[j/k] Move    "),
         Span::raw("[⏎] Toggle Done    "),
         Span::raw("[Space] Expand    "),
         Span::raw("[e] Edit    "),
