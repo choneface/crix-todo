@@ -120,6 +120,10 @@ impl App {
 
     pub fn toggle_mode(&mut self) {
         if self.mode == InputMode::Normal {
+            if self.todos.is_empty() {
+                self.mode = InputMode::Normal;
+                return;
+            }
             let idx = self.visual_order[self.selected];
             let todo = &self.todos[idx];
             self.edit_buffer = Some(EditBuffer::new(todo));
@@ -221,6 +225,7 @@ mod tests {
     use super::*;
     use crate::storage::MockStorage;
     use mockall::predicate::eq;
+    use crate::tui::app::InputMode::Normal;
 
     #[test]
     fn next_and_prev_test() {
@@ -554,6 +559,16 @@ mod tests {
         app.selected = 0;
         app.demote_selected();
         assert_eq!(app.todos[app.visual_order[0]].priority, None);
+    }
+
+    #[test]
+    fn toggle_mode_when_empty_is_no_op() {
+        let mut app = App::new(vec![]);
+        assert_eq!(app.mode, Normal);
+        assert_eq!(app.todos.len(), 0);
+
+        app.toggle_mode();
+        assert_eq!(app.mode, Normal);
     }
 
     fn todo_with(desc: &str, prio: Option<u8>) -> TodoItem {
