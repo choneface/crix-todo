@@ -120,6 +120,10 @@ impl App {
 
     pub fn toggle_mode(&mut self) {
         if self.mode == InputMode::Normal {
+            if self.todos.is_empty() {
+                self.mode = InputMode::Normal;
+                return;
+            }
             let idx = self.visual_order[self.selected];
             let todo = &self.todos[idx];
             self.edit_buffer = Some(EditBuffer::new(todo));
@@ -176,7 +180,7 @@ impl App {
         let new_priority = match self.todos[idx].priority {
             Some(p) if p > 0 => Some(p - 1),
             Some(_) => Some(0), // already zero
-            None => self.get_last_non_none_priority(),
+            None => Some(self.get_last_non_none_priority()),
         };
 
         self.todos[idx].priority = new_priority;
@@ -187,7 +191,7 @@ impl App {
         let idx = self.visual_order[self.selected];
         let new_priority = match self.todos[idx].priority {
             // 99 == None
-            Some(p) if p < 98 => Some(p + 1),
+            Some(p) if p < 9 => Some(p + 1),
             _ => None,
         };
 
@@ -195,12 +199,13 @@ impl App {
         self.recompute_visual_order(idx);
     }
 
-    pub fn get_last_non_none_priority(&mut self) -> Option<u8> {
+    pub fn get_last_non_none_priority(&mut self) -> u8 {
         self.visual_order
             .iter()
             .rev()
             .filter_map(|&i| self.todos[i].priority)
             .next()
+            .unwrap_or(9)
     }
 
     pub fn split_current(&mut self) {
@@ -220,6 +225,7 @@ impl App {
 mod tests {
     use super::*;
     use crate::storage::MockStorage;
+    use crate::tui::app::InputMode::Normal;
     use mockall::predicate::eq;
 
     #[test]
@@ -468,7 +474,7 @@ mod tests {
         // Order: b (1), a (3), d (5), c (None), e (None)
         // Reversed: e, c, d, a, b → last non-none = d = 5
 
-        assert_eq!(app.get_last_non_none_priority(), Some(5));
+        assert_eq!(app.get_last_non_none_priority(), 5);
     }
 
     #[test]
@@ -479,7 +485,7 @@ mod tests {
             todo_with("c", None),
         ]);
 
-        assert_eq!(app.get_last_non_none_priority(), None);
+        assert_eq!(app.get_last_non_none_priority(), 9);
     }
 
     #[test]
@@ -490,13 +496,13 @@ mod tests {
             todo_with("c", None),
         ]);
 
-        assert_eq!(app.get_last_non_none_priority(), Some(2));
+        assert_eq!(app.get_last_non_none_priority(), 2);
     }
 
     #[test]
     fn get_last_non_none_priority_with_empty_list() {
         let mut app = App::new(vec![]);
-        assert_eq!(app.get_last_non_none_priority(), None);
+        assert_eq!(app.get_last_non_none_priority(), 9);
     }
 
     #[test]
@@ -554,6 +560,16 @@ mod tests {
         app.selected = 0;
         app.demote_selected();
         assert_eq!(app.todos[app.visual_order[0]].priority, None);
+    }
+
+    #[test]
+    fn toggle_mode_when_empty_is_no_op() {
+        let mut app = App::new(vec![]);
+        assert_eq!(app.mode, Normal);
+        assert_eq!(app.todos.len(), 0);
+
+        app.toggle_mode();
+        assert_eq!(app.mode, Normal);
     }
 
     fn todo_with(desc: &str, prio: Option<u8>) -> TodoItem {
