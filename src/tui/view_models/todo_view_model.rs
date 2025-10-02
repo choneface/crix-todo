@@ -58,8 +58,6 @@ mod tests {
             TodoItem {
                 description: description.to_string(),
                 priority,
-                due: None,
-                tags: None,
                 done,
                 notes: None,
             },

@@ -20,8 +20,6 @@ pub fn render(f: &mut Frame, app: &App) {
         Constraint::Length(2),
         Constraint::Length(3),
         Constraint::Length(3),
-        Constraint::Length(3),
-        Constraint::Length(3),
         Constraint::Length(8),
         Constraint::Length(1),
         Constraint::Length(2),
@@ -30,8 +28,8 @@ pub fn render(f: &mut Frame, app: &App) {
 
     let view_model = EditModeModalViewModel::from_app(&app);
     render_edit_header(f, inner_chunks[0]);
-    render_edit_fields(f, inner_chunks[1..6].to_vec(), &view_model);
-    render_status_span(f, inner_chunks[7], view_model.done);
+    render_edit_fields(f, inner_chunks[1..4].to_vec(), &view_model);
+    render_status_span(f, inner_chunks[5], view_model.done);
     render_cursor(f, inner_area, &view_model)
 }
 

@@ -45,7 +45,7 @@ impl App {
             }
             InputMode::Editing => {
                 if let Some(buf) = self.edit_buffer.as_mut() {
-                    if buf.selected_field + 1 < 5 {
+                    if buf.selected_field + 1 < 3 {
                         buf.fields[buf.selected_field].reset_cursor();
                         buf.selected_field += 1;
                     }
@@ -576,8 +576,6 @@ mod tests {
         TodoItem {
             description: desc.into(),
             priority: prio,
-            due: None,
-            tags: None,
             notes: None,
             done: false,
         }
@@ -587,8 +585,6 @@ mod tests {
         TodoItem {
             description: description.into(),
             priority: None,
-            due: None,
-            tags: None,
             notes: None,
             done: false,
         }

@@ -2,7 +2,7 @@ use crate::storage::TodoItem;
 use crate::tui::state::field_buffer::FieldBuffer;
 
 pub struct EditBuffer {
-    pub fields: [FieldBuffer; 5], // 0-4: desc, prio, due, tags, notes
+    pub fields: [FieldBuffer; 3], // 0-4: desc, prio, notes
     pub selected_field: usize,
 }
 
@@ -12,8 +12,6 @@ impl EditBuffer {
             fields: [
                 FieldBuffer::new(todo.description.clone()),
                 FieldBuffer::new(todo.priority.map_or(String::new(), |p| p.to_string())),
-                FieldBuffer::new(todo.due.clone().unwrap_or_default()),
-                FieldBuffer::new(todo.tags.clone().unwrap_or_default().join(", ")),
                 FieldBuffer::new(todo.notes.clone().unwrap_or_default()),
             ],
             selected_field: 0,
@@ -25,25 +23,7 @@ impl EditBuffer {
 
         todo.priority = self.fields[1].value.trim().parse::<u8>().ok();
 
-        todo.due = match self.fields[2].value.trim() {
-            "" => None,
-            s => Some(s.to_string()),
-        };
-
-        todo.tags = if self.fields[3].value.trim().is_empty() {
-            None
-        } else {
-            Some(
-                self.fields[3]
-                    .value
-                    .split(',')
-                    .map(|s| s.trim().to_string())
-                    .filter(|s| !s.is_empty())
-                    .collect(),
-            )
-        };
-
-        todo.notes = match self.fields[4].value.trim() {
+        todo.notes = match self.fields[2].value.trim() {
             "" => None,
             s => Some(s.to_string()),
         };
@@ -63,8 +43,6 @@ mod tests {
         TodoItem {
             description: "old desc".into(),
             priority: Some(2),
-            due: Some("2030-01-01".into()),
-            tags: Some(vec!["foo".into(), "bar".into()]),
             done: false,
             notes: Some("old note".into()),
         }
@@ -76,14 +54,7 @@ mod tests {
         let buffer = EditBuffer::new(&todo);
 
         assert_eq!(buffer.fields[0].value, "old desc");
-        assert_eq!(buffer.fields[1].value, "2");
-        assert_eq!(buffer.fields[2].value, "2030-01-01");
-        assert_eq!(buffer.fields[3].value, "foo, bar");
-        assert_eq!(buffer.fields[4].value, "old note");
-
         assert_eq!(buffer.fields[0].cursor, "old desc".chars().count());
-        assert_eq!(buffer.fields[3].cursor, "foo, bar".chars().count());
-
         assert_eq!(buffer.selected_field, 0);
     }
 
@@ -92,9 +63,9 @@ mod tests {
         let todo = sample_todo();
         let mut buf = EditBuffer::new(&todo);
 
-        buf.selected_field = 2; // Due-date field
+        buf.selected_field = 2; // Note field
         buf.current_field_mut().value.push_str("X"); // mutate through helper
-        assert_eq!(buf.fields[2].value, "2030-01-01X");
+        assert_eq!(buf.fields[2].value, "old noteX");
     }
 
     #[test]
@@ -104,16 +75,12 @@ mod tests {
 
         buf.fields[0].value = "new desc".into();
         buf.fields[1].value = "5".into();
-        buf.fields[2].value = "".into();
-        buf.fields[3].value = "baz, qux".into();
-        buf.fields[4].value = "new note".into();
+        buf.fields[2].value = "new note".into();
 
         buf.update_todo(&mut todo);
 
         assert_eq!(todo.description, "new desc");
         assert_eq!(todo.priority, Some(5));
-        assert_eq!(todo.due, None);
-        assert_eq!(todo.tags, Some(vec!["baz".into(), "qux".into()]));
         assert_eq!(todo.notes, Some("new note".into()));
     }
 

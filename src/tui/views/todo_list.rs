@@ -71,12 +71,6 @@ fn render_row<'a>(row: &Row) -> ListItem<'a> {
                 if let Some(p) = item.priority {
                     lines.push(format!("   Priority: {}", p));
                 }
-                if let Some(due) = &item.due {
-                    lines.push(format!("   Due: {}", due));
-                }
-                if let Some(tags) = &item.tags {
-                    lines.push(format!("   Tags: {:?}", tags));
-                }
                 if let Some(notes) = &item.notes {
                     lines.push(format!("   Notes: {}", notes));
                 }

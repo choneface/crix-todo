@@ -8,8 +8,6 @@ use std::path::PathBuf;
 pub struct TodoItem {
     pub description: String,
     pub priority: Option<u8>,
-    pub due: Option<String>,
-    pub tags: Option<Vec<String>>,
     pub done: bool,
     pub notes: Option<String>,
 }
@@ -19,8 +17,6 @@ impl TodoItem {
         TodoItem {
             description: todo.description + " - part 2",
             priority: todo.priority,
-            due: todo.due,
-            tags: todo.tags,
             done: false,
             notes: todo.notes,
         }
@@ -110,8 +106,6 @@ mod tests {
         let todo = TodoItem {
             description: "Test".to_string(),
             priority: Some(1),
-            due: Some("2021-01-01".to_string()),
-            tags: Some(vec!["tag1".to_string(), "tag2".to_string()]),
             done: false,
             notes: Some("Notes".to_string()),
         };
@@ -133,16 +127,12 @@ mod tests {
         let todo1 = TodoItem {
             description: "Test 1".to_string(),
             priority: Some(1),
-            due: Some("2021-01-01".to_string()),
-            tags: Some(vec!["first".to_string(), "todo".to_string()]),
             done: false,
             notes: Some("first todo".to_string()),
         };
         let todo2 = TodoItem {
             description: "Test 2".to_string(),
             priority: Some(1),
-            due: Some("2021-02-02".to_string()),
-            tags: Some(vec!["second".to_string(), "todo".to_string()]),
             done: true,
             notes: Some("second todo".to_string()),
         };
