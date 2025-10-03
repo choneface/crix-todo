@@ -84,12 +84,6 @@ impl App {
         }
     }
 
-    pub fn toggle_done(&mut self) {
-        if let Some(&actual_index) = self.visual_order.get(self.selected) {
-            self.todos[actual_index].done = !self.todos[actual_index].done;
-        }
-    }
-
     pub fn toggle_expanded(&mut self) {
         if let Some(&actual_index) = self.visual_order.get(self.selected) {
             if self.expanded == Some(actual_index) {
@@ -249,21 +243,6 @@ mod tests {
         assert_eq!(app.selected, 1);
         app.previous();
         assert_eq!(app.selected, 0);
-    }
-
-    #[test]
-    fn toggle_done_test() {
-        let mut app = App::new(vec![make_todo("1")]);
-        assert_eq!(app.selected, 0);
-        assert_eq!(app.todos.len(), 1);
-
-        app.toggle_done();
-        let completed_todo = app.todos[0].clone();
-        assert_eq!(completed_todo.done, true);
-
-        app.toggle_done();
-        let incomplete_todo = app.todos[0].clone();
-        assert_eq!(incomplete_todo.done, false);
     }
 
     #[test]
@@ -717,7 +696,6 @@ mod tests {
             description: desc.into(),
             priority: prio,
             notes: None,
-            done: false,
         }
     }
 
@@ -726,7 +704,6 @@ mod tests {
             description: description.into(),
             priority: None,
             notes: None,
-            done: false,
         }
     }
 }

@@ -8,7 +8,6 @@ use std::path::PathBuf;
 pub struct TodoItem {
     pub description: String,
     pub priority: Option<u8>,
-    pub done: bool,
     pub notes: Option<String>,
 }
 
@@ -17,7 +16,6 @@ impl TodoItem {
         TodoItem {
             description: String::new(),
             priority,
-            done: false,
             notes: Some(String::new()),
         }
     }
@@ -26,7 +24,6 @@ impl TodoItem {
         TodoItem {
             description: todo.description + " - part 2",
             priority: todo.priority,
-            done: false,
             notes: todo.notes,
         }
     }
@@ -36,7 +33,6 @@ impl TodoItem {
 pub trait Storage {
     fn load_items(&self) -> io::Result<Vec<TodoItem>>;
     fn save_items(&self, items: &[TodoItem]) -> io::Result<()>;
-    fn add_item(&self, item: TodoItem) -> io::Result<()>;
 }
 
 pub struct FileStorage {
@@ -79,12 +75,6 @@ impl Storage for FileStorage {
         file.write_all(json.as_bytes())?;
         Ok(())
     }
-
-    fn add_item(&self, item: TodoItem) -> io::Result<()> {
-        let mut items = self.load_items()?;
-        items.push(item);
-        self.save_items(&items)
-    }
 }
 
 #[cfg(test)]
@@ -107,26 +97,6 @@ mod tests {
         assert_eq!(items.len(), 0);
     }
 
-    #[test]
-    fn test_save_and_load_single_item() {
-        let file = NamedTempFile::new().unwrap();
-        let storage = FileStorage::new(file.path().to_str().unwrap());
-
-        let todo = TodoItem {
-            description: "Test".to_string(),
-            priority: Some(1),
-            done: false,
-            notes: Some("Notes".to_string()),
-        };
-
-        storage.add_item(todo.clone()).unwrap();
-
-        let todos_from_storage = storage.load_items().unwrap();
-        assert_eq!(todos_from_storage.len(), 1);
-
-        let todo_from_storage = &todos_from_storage[0];
-        assert_eq!(todo_from_storage, &todo)
-    }
 
     #[test]
     fn test_save_and_load_multiple_items() {
@@ -136,13 +106,11 @@ mod tests {
         let todo1 = TodoItem {
             description: "Test 1".to_string(),
             priority: Some(1),
-            done: false,
             notes: Some("first todo".to_string()),
         };
         let todo2 = TodoItem {
             description: "Test 2".to_string(),
             priority: Some(1),
-            done: true,
             notes: Some("second todo".to_string()),
         };
 

@@ -43,7 +43,6 @@ mod tests {
         TodoItem {
             description: "old desc".into(),
             priority: Some(2),
-            done: false,
             notes: Some("old note".into()),
         }
     }

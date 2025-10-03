@@ -8,7 +8,6 @@ pub enum InputEvent {
     Up,
     Left,
     Right,
-    ToggleDone,
     ToggleExpand,
     EnableEditing,
     DisableEditing,
@@ -40,7 +39,6 @@ fn match_key_code_for_normal_mode(code: KeyCode) -> InputEvent {
         KeyCode::Char('k') => InputEvent::Up,
         KeyCode::Left => InputEvent::Left,
         KeyCode::Right => InputEvent::Right,
-        KeyCode::Enter => InputEvent::ToggleDone,
         KeyCode::Char(' ') => InputEvent::ToggleExpand,
         KeyCode::Char('e') => InputEvent::EnableEditing,
         KeyCode::Backspace => InputEvent::Backspace,
@@ -60,7 +58,6 @@ fn match_key_code_for_edit_mode(code: KeyCode) -> InputEvent {
         KeyCode::Right => InputEvent::Right,
         KeyCode::Esc => InputEvent::DisableEditing,
         KeyCode::Backspace => InputEvent::Backspace,
-        KeyCode::Enter => InputEvent::ToggleDone,
         KeyCode::Char(c) => InputEvent::Char(c),
         _ => InputEvent::None,
     }

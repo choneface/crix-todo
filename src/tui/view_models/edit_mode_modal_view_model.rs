@@ -10,7 +10,6 @@ pub struct Input {
 
 pub struct EditModeModalViewModel {
     pub fields: Vec<Input>,
-    pub done: bool,
     pub selected_index: usize,
 }
 
@@ -30,7 +29,6 @@ impl EditModeModalViewModel {
                 to_input("Priority", &buf.fields[1], 1),
                 to_input("Notes", &buf.fields[2], 4),
             ],
-            done: app.todos[app.visual_order[app.selected]].done,
             selected_index: buf.selected_field,
         }
     }

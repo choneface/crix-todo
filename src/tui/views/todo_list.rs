@@ -64,8 +64,7 @@ fn render_row<'a>(row: &Row) -> ListItem<'a> {
         Row::Todo {
             item, is_expanded, ..
         } => {
-            let checkbox = if item.done { "[x]" } else { "[ ]" };
-            let mut lines = vec![format!(" -  {} {}", checkbox, item.description)];
+            let mut lines = vec![format!(" -  {}", item.description)];
 
             if *is_expanded {
                 if let Some(p) = item.priority {
