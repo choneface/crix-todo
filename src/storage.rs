@@ -97,7 +97,6 @@ mod tests {
         assert_eq!(items.len(), 0);
     }
 
-
     #[test]
     fn test_save_and_load_multiple_items() {
         let file = NamedTempFile::new().unwrap();

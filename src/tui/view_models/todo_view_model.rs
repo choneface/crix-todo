@@ -48,11 +48,7 @@ mod tests {
     use crate::storage::TodoItem;
     use crate::tui::app::{App, InputMode};
 
-    fn make_todo(
-        description: &str,
-        priority: Option<u8>,
-        expanded: bool,
-    ) -> (TodoItem, bool) {
+    fn make_todo(description: &str, priority: Option<u8>, expanded: bool) -> (TodoItem, bool) {
         (
             TodoItem {
                 description: description.to_string(),
