@@ -83,7 +83,7 @@ fn render_row<'a>(idx: usize, row: &Row<'a>, rows: &[Row<'a>]) -> ListItem<'a> {
             // First todo under a header -> "╭─", last -> "╰─", middle -> "├─"
             let todo_connector = if prev_is_header && next_is_header {
                 // single item group (both first and last)
-                "╭─"
+                "╰─"
             } else if prev_is_header {
                 "╭─"
             } else if next_is_header {
