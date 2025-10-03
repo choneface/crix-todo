@@ -219,6 +219,19 @@ impl App {
             }
         }
     }
+
+    pub fn add_todo(&mut self) {
+        // first add a new empty todo
+        if let Some(idx) = self.visual_order.get(self.selected) {
+            if let Some(current) = self.todos.get(*idx) {
+                let todo = TodoItem::new(current.priority);
+                self.todos.insert(idx + 1, todo);
+                self.recompute_visual_order(idx + 1);
+            }
+        }
+
+        self.toggle_mode()
+    }
 }
 
 #[cfg(test)]
@@ -570,6 +583,133 @@ mod tests {
 
         app.toggle_mode();
         assert_eq!(app.mode, Normal);
+    }
+
+    #[test]
+    fn add_todo_copies_priority_and_inserts_after_selected_in_visual_order() {
+        // priorities: b(1), a(1), c(3) -> visual_order should be [1,0,2] (or [0,1,2] if equal priorities are stable)
+        let mut app = App::new(vec![
+            todo_with("a", Some(1)),
+            todo_with("b", Some(1)),
+            todo_with("c", Some(3)),
+        ]);
+
+        // Select visual idx 0 (the first "1" priority in view)
+        app.selected = 0;
+        // Keep track of which underlying todo that is:
+        let before_selected_under_idx = app.visual_order[app.selected];
+
+        app.add_todo();
+
+        // length grew by 1
+        assert_eq!(app.todos.len(), 4);
+
+        // Find the new todo by description (assuming new() creates an empty description)
+        let new_idx = app
+            .todos
+            .iter()
+            .enumerate()
+            .find(|(_, t)| t.description.is_empty())
+            .map(|(i, _)| i)
+            .expect("new todo not found");
+
+        // New todo should copy priority from the selected
+        assert_eq!(
+            app.todos[new_idx].priority,
+            app.todos[before_selected_under_idx].priority
+        );
+
+        // In visual order, the new todo should appear immediately AFTER the selected visual slot
+        // (i.e., ties keep relative order so we sit right after the selected among equal-priority items)
+        let pos_selected = app
+            .visual_order
+            .iter()
+            .position(|&i| i == before_selected_under_idx)
+            .expect("selected idx not found in visual_order");
+        let pos_new = app
+            .visual_order
+            .iter()
+            .position(|&i| i == new_idx)
+            .expect("new idx not found in visual_order");
+
+        assert_eq!(pos_new, pos_selected + 1);
+    }
+
+    #[test]
+    fn add_todo_appends_when_selected_is_last_in_visual_order() {
+        // priorities: a(0), b(2) -> visual_order [0,1]
+        let mut app = App::new(vec![todo_with("a", Some(0)), todo_with("b", Some(2))]);
+
+        // Select last in visual list (the "b")
+        app.selected = app.visual_order.len() - 1;
+        let selected_under_idx = app.visual_order[app.selected];
+
+        app.add_todo();
+
+        assert_eq!(app.todos.len(), 3);
+
+        // Find new todo
+        let new_idx = app
+            .todos
+            .iter()
+            .enumerate()
+            .find(|(_, t)| t.description.is_empty())
+            .map(|(i, _)| i)
+            .expect("new todo not found");
+
+        // Same priority as selected
+        assert_eq!(
+            app.todos[new_idx].priority,
+            app.todos[selected_under_idx].priority
+        );
+
+        // New should come right after selected in visual order
+        let pos_selected = app
+            .visual_order
+            .iter()
+            .position(|&i| i == selected_under_idx)
+            .unwrap();
+        let pos_new = app.visual_order.iter().position(|&i| i == new_idx).unwrap();
+
+        assert_eq!(pos_new, pos_selected + 1);
+        // …and therefore be the last if selected was last
+        assert_eq!(pos_new, app.visual_order.len() - 1);
+    }
+
+    #[test]
+    fn add_todo_copies_none_priority_when_selected_has_none() {
+        let mut app = App::new(vec![todo_with("a", Some(0)), todo_with("b", None)]);
+
+        // Ensure "b" is the selected visually
+        // visual order should place None after defined priorities
+        app.selected = app
+            .visual_order
+            .iter()
+            .position(|&i| app.todos[i].description == "b")
+            .unwrap();
+
+        let selected_under_idx = app.visual_order[app.selected];
+
+        app.add_todo();
+
+        let new_idx = app
+            .todos
+            .iter()
+            .enumerate()
+            .find(|(_, t)| t.description.is_empty())
+            .map(|(i, _)| i)
+            .expect("new todo not found");
+
+        assert_eq!(app.todos[new_idx].priority, None);
+
+        // It should be right after "b" in visual order
+        let pos_selected = app
+            .visual_order
+            .iter()
+            .position(|&i| i == selected_under_idx)
+            .unwrap();
+        let pos_new = app.visual_order.iter().position(|&i| i == new_idx).unwrap();
+        assert_eq!(pos_new, pos_selected + 1);
     }
 
     fn todo_with(desc: &str, prio: Option<u8>) -> TodoItem {

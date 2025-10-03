@@ -52,6 +52,7 @@ fn launch_ui(storage: impl Storage) -> Result<(), Box<dyn std::error::Error>> {
                 crate::tui::events::InputEvent::PromotePriority => app.promote_selected(),
                 crate::tui::events::InputEvent::DemotePriority => app.demote_selected(),
                 crate::tui::events::InputEvent::TodoSplit => app.split_current(),
+                crate::tui::events::InputEvent::AddTodo => app.add_todo(),
                 _ => {}
             },
             Editing => match poll_input(Duration::from_millis(200), Editing)? {

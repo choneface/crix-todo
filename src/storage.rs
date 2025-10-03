@@ -13,6 +13,15 @@ pub struct TodoItem {
 }
 
 impl TodoItem {
+    pub fn new(priority: Option<u8>) -> TodoItem {
+        TodoItem {
+            description: String::new(),
+            priority,
+            done: false,
+            notes: Some(String::new()),
+        }
+    }
+
     pub fn create_part_two(todo: TodoItem) -> TodoItem {
         TodoItem {
             description: todo.description + " - part 2",
