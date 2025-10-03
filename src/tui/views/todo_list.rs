@@ -30,7 +30,14 @@ pub fn render(f: &mut Frame, app: &App) {
 
 fn render_todo_list(f: &mut Frame, app: &App, chunk: Rect) {
     let view_model = TodoListViewModel::from_app(app);
-    let items: Vec<ListItem> = view_model.rows.iter().map(render_row).collect();
+
+    // FIX: actually call the renderer with (index, row)
+    let items: Vec<ListItem> = view_model
+        .rows
+        .iter()
+        .enumerate()
+        .map(|(i, row)| render_row(i, row, &view_model.rows))
+        .collect();
 
     let mut state = ListState::default();
     state.select(view_model.selected_index);
@@ -58,20 +65,49 @@ fn render_keybindings(f: &mut Frame, rect: Rect) {
     f.render_widget(header, rect);
 }
 
-fn render_row<'a>(row: &Row) -> ListItem<'a> {
+fn render_row<'a>(idx: usize, row: &Row<'a>, rows: &[Row<'a>]) -> ListItem<'a> {
     match row {
-        Row::Header(text) => ListItem::new(text.clone()),
-        Row::Todo {
-            item, is_expanded, ..
-        } => {
-            let mut lines = vec![format!(" -  {}", item.description)];
+        Row::Header(text) => {
+            // Headers are printed plainly (you could add styling here if you like)
+            ListItem::new(text.clone())
+        }
+        Row::Todo { item, is_expanded } => {
+            // Determine neighbors and whether we're the first/last todo in the current group.
+            let prev = idx.checked_sub(1).and_then(|i| rows.get(i));
+            let next = rows.get(idx + 1);
 
+            let prev_is_header = matches!(prev, Some(Row::Header(_))) || prev.is_none();
+            let next_is_header = matches!(next, Some(Row::Header(_))) || next.is_none();
+
+            // Choose the connector for this todo line
+            // First todo under a header -> "╭─", last -> "╰─", middle -> "├─"
+            let todo_connector = if prev_is_header && next_is_header {
+                // single item group (both first and last)
+                "╭─"
+            } else if prev_is_header {
+                "╭─"
+            } else if next_is_header {
+                "╰─"
+            } else {
+                "├─"
+            };
+
+            // Left gutter that continues vertical trunk if there are following siblings in the same group
+            // If we're NOT last, keep a vertical line "│  " so child rows look connected.
+            let trunk_gutter = if next_is_header { "   " } else { "│  " };
+
+            let mut lines = Vec::new();
+
+            // The todo line
+            lines.push(format!("{} {}", todo_connector, item.description));
+
+            // Optional notes, rendered as a curved child branch.
             if *is_expanded {
-                if let Some(p) = item.priority {
-                    lines.push(format!("   Priority: {}", p));
-                }
                 if let Some(notes) = &item.notes {
-                    lines.push(format!("   Notes: {}", notes));
+                    // Child branch under the todo:
+                    // we keep the trunk (│) in the left gutter when more todos follow.
+                    // Then draw the curved child "╰─" into the note.
+                    lines.push(format!("{}╰─ Notes: {}", trunk_gutter, notes));
                 }
             }
 
