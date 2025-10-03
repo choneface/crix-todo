@@ -4,8 +4,17 @@ mod storage;
 mod tui;
 
 use crate::storage::FileStorage;
+use clap::Parser;
 
 fn main() {
-    let storage = FileStorage::new("todo.json");
+    let args = cli::Cli::parse();
+
+    let path = if args.local {
+        "todo.json"
+    } else {
+        "~/.todo.json"
+    };
+
+    let storage = FileStorage::new(path);
     commands::edit::run(storage);
 }

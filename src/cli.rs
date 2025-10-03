@@ -4,53 +4,15 @@ use clap::{Parser, Subcommand};
 #[command(name = "todo")]
 #[command(about = "A simple TUI-based todo CLI", version, author)]
 pub struct Cli {
+    /// Use local storage
+    #[arg(long)]
+    pub local: bool,
+
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Option<Commands>, // subcommands still possible
 }
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Add a new todo item
-    Add {
-        /// Description of the task
-        description: String,
-
-        /// Optional priority (0–9)
-        #[arg(long)]
-        priority: Option<u8>,
-
-        /// Optional due date (YYYY-MM-DD)
-        #[arg(long)]
-        due: Option<String>,
-
-        /// Comma-separated list of tags
-        #[arg(long, value_delimiter = ',')]
-        tags: Option<Vec<String>>,
-
-        /// Optional notes
-        #[arg(long)]
-        notes: Option<String>,
-    },
-
-    /// List all todos
-    List {
-        /// Include completed tasks
-        #[arg(long)]
-        all: bool,
-
-        /// Filter by priority
-        #[arg(long)]
-        priority: Option<u8>,
-
-        /// Filter by tag
-        #[arg(long)]
-        tag: Option<String>,
-
-        /// Filter by due date (YYYY-MM-DD)
-        #[arg(long)]
-        due: Option<String>,
-    },
-
-    /// Launch TUI editor to complete/edit todos
-    Edit,
+    // add subcommands later
 }
