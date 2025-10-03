@@ -7,7 +7,7 @@ use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 
 pub fn render(f: &mut Frame, app: &App) {
     let outer_block = Block::bordered().borders(Borders::ALL);
-    let outer_area = popup_area(f.size(), 60, 50);
+    let outer_area = popup_area(f.size(), 60, 20);
     f.render_widget(Clear, outer_area);
     f.render_widget(outer_block, outer_area);
 
@@ -36,7 +36,6 @@ fn render_edit_header(f: &mut Frame, area: Rect) {
         Span::raw("[↑/↓] Move field    "),
         Span::raw("[←/→] Move cursor    "),
         Span::raw("[esc] Save & exit    "),
-        Span::raw("[⏎] Toggle Done    "),
     ]))
     .block(Block::default());
     f.render_widget(header, area);
