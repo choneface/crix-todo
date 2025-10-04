@@ -1,13 +1,13 @@
 use crate::tui::app::App;
 use crate::tui::view_models::edit_mode_modal_view_model::{EditModeModalViewModel, Input};
 use ratatui::Frame;
-use ratatui::layout::{Alignment, Constraint, Flex, Layout, Margin, Rect};
-use ratatui::prelude::{Color, Line, Modifier, Span, Style};
+use ratatui::layout::{Constraint, Flex, Layout, Margin, Rect};
+use ratatui::prelude::{Color, Line, Span, Style};
 use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 
 pub fn render(f: &mut Frame, app: &App) {
     let outer_block = Block::bordered().borders(Borders::ALL);
-    let outer_area = popup_area(f.size(), 60, 50);
+    let outer_area = popup_area(f.size(), 60, 20);
     f.render_widget(Clear, outer_area);
     f.render_widget(outer_block, outer_area);
 
@@ -20,18 +20,14 @@ pub fn render(f: &mut Frame, app: &App) {
         Constraint::Length(2),
         Constraint::Length(3),
         Constraint::Length(3),
-        Constraint::Length(3),
-        Constraint::Length(3),
         Constraint::Length(8),
         Constraint::Length(1),
-        Constraint::Length(2),
     ])
     .split(inner_area);
 
     let view_model = EditModeModalViewModel::from_app(&app);
     render_edit_header(f, inner_chunks[0]);
-    render_edit_fields(f, inner_chunks[1..6].to_vec(), &view_model);
-    render_status_span(f, inner_chunks[7], view_model.done);
+    render_edit_fields(f, inner_chunks[1..4].to_vec(), &view_model);
     render_cursor(f, inner_area, &view_model)
 }
 
@@ -40,7 +36,6 @@ fn render_edit_header(f: &mut Frame, area: Rect) {
         Span::raw("[↑/↓] Move field    "),
         Span::raw("[←/→] Move cursor    "),
         Span::raw("[esc] Save & exit    "),
-        Span::raw("[⏎] Toggle Done    "),
     ]))
     .block(Block::default());
     f.render_widget(header, area);
@@ -51,25 +46,6 @@ fn render_edit_fields(f: &mut Frame, chunks: Vec<Rect>, view_model: &EditModeMod
     for (i, field) in fields.iter().enumerate() {
         f.render_widget(field, chunks[i])
     }
-}
-
-fn render_status_span(f: &mut Frame, area: Rect, is_done: bool) {
-    let status_span = if is_done {
-        Span::styled(
-            "Done",
-            Style::default()
-                .fg(Color::Green)
-                .add_modifier(Modifier::BOLD),
-        )
-    } else {
-        Span::styled(
-            "Not done",
-            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-        )
-    };
-
-    let status = Paragraph::new(Line::from(vec![status_span])).alignment(Alignment::Center);
-    f.render_widget(status, area);
 }
 
 fn render_cursor(f: &mut Frame, area: Rect, view_model: &EditModeModalViewModel) {

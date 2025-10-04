@@ -48,19 +48,11 @@ mod tests {
     use crate::storage::TodoItem;
     use crate::tui::app::{App, InputMode};
 
-    fn make_todo(
-        description: &str,
-        priority: Option<u8>,
-        done: bool,
-        expanded: bool,
-    ) -> (TodoItem, bool) {
+    fn make_todo(description: &str, priority: Option<u8>, expanded: bool) -> (TodoItem, bool) {
         (
             TodoItem {
                 description: description.to_string(),
                 priority,
-                due: None,
-                tags: None,
-                done,
                 notes: None,
             },
             expanded,
@@ -70,10 +62,10 @@ mod tests {
     #[test]
     fn builds_rows_with_headers_and_selection_correctly() {
         let todos = vec![
-            make_todo("first", Some(1), false, false),
-            make_todo("second", Some(1), true, true),
-            make_todo("third", Some(2), false, false),
-            make_todo("no-priority", None, false, false),
+            make_todo("first", Some(1), false),
+            make_todo("second", Some(1), true),
+            make_todo("third", Some(2), false),
+            make_todo("no-priority", None, false),
         ]
         .into_iter()
         .map(|(todo, _)| todo)
@@ -110,8 +102,8 @@ mod tests {
     #[test]
     fn marks_expanded_flag_correctly() {
         let todos = vec![
-            make_todo("one", Some(1), false, false),
-            make_todo("two", Some(2), false, true),
+            make_todo("one", Some(1), false),
+            make_todo("two", Some(2), true),
         ]
         .into_iter()
         .map(|(todo, _)| todo)

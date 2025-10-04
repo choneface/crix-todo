@@ -43,14 +43,7 @@ impl App {
                     self.selected += 1;
                 }
             }
-            InputMode::Editing => {
-                if let Some(buf) = self.edit_buffer.as_mut() {
-                    if buf.selected_field + 1 < 5 {
-                        buf.fields[buf.selected_field].reset_cursor();
-                        buf.selected_field += 1;
-                    }
-                }
-            }
+            InputMode::Editing => {}
         }
     }
 
@@ -61,14 +54,7 @@ impl App {
                     self.selected -= 1;
                 }
             }
-            InputMode::Editing => {
-                if let Some(buf) = self.edit_buffer.as_mut() {
-                    if buf.selected_field > 0 {
-                        buf.fields[buf.selected_field].reset_cursor();
-                        buf.selected_field -= 1;
-                    }
-                }
-            }
+            InputMode::Editing => {}
         }
     }
 
@@ -81,12 +67,6 @@ impl App {
     pub fn right(&mut self) {
         if let Some(buf) = self.edit_buffer.as_mut() {
             buf.current_field_mut().move_right();
-        }
-    }
-
-    pub fn toggle_done(&mut self) {
-        if let Some(&actual_index) = self.visual_order.get(self.selected) {
-            self.todos[actual_index].done = !self.todos[actual_index].done;
         }
     }
 
@@ -103,12 +83,14 @@ impl App {
     pub fn edit_insert(&mut self, ch: char) {
         if let Some(buf) = self.edit_buffer.as_mut() {
             buf.current_field_mut().insert_char(ch);
+            self.commit_edit()
         }
     }
 
     pub fn edit_backspace(&mut self) {
         if let Some(buf) = self.edit_buffer.as_mut() {
             buf.current_field_mut().backspace();
+            self.commit_edit()
         }
     }
 
@@ -121,17 +103,27 @@ impl App {
     pub fn toggle_mode(&mut self) {
         if self.mode == InputMode::Normal {
             if self.todos.is_empty() {
-                self.mode = InputMode::Normal;
+                // Already in Normal; nothing to edit.
                 return;
             }
+
             let idx = self.visual_order[self.selected];
             let todo = &self.todos[idx];
+
+            // Create the buffer
             self.edit_buffer = Some(EditBuffer::new(todo));
+
+            // Mutably borrow the buffer to set a field (no move)
+            if let Some(buf) = self.edit_buffer.as_mut() {
+                buf.selected_field = if self.expanded.is_some() { 2 } else { 0 };
+            }
+
             self.mode = InputMode::Editing;
         } else {
-            self.mode = InputMode::Normal;
+            // Commit before clearing the buffer
             self.commit_edit();
             self.edit_buffer = None;
+            self.mode = InputMode::Normal;
         }
     }
 
@@ -219,6 +211,19 @@ impl App {
             }
         }
     }
+
+    pub fn add_todo(&mut self) {
+        // first add a new empty todo
+        if let Some(idx) = self.visual_order.get(self.selected) {
+            if let Some(current) = self.todos.get(*idx) {
+                let todo = TodoItem::new(current.priority);
+                self.todos.insert(idx + 1, todo);
+                self.recompute_visual_order(idx + 1);
+            }
+        }
+
+        self.toggle_mode()
+    }
 }
 
 #[cfg(test)]
@@ -236,21 +241,6 @@ mod tests {
         assert_eq!(app.selected, 1);
         app.previous();
         assert_eq!(app.selected, 0);
-    }
-
-    #[test]
-    fn toggle_done_test() {
-        let mut app = App::new(vec![make_todo("1")]);
-        assert_eq!(app.selected, 0);
-        assert_eq!(app.todos.len(), 1);
-
-        app.toggle_done();
-        let completed_todo = app.todos[0].clone();
-        assert_eq!(completed_todo.done, true);
-
-        app.toggle_done();
-        let incomplete_todo = app.todos[0].clone();
-        assert_eq!(incomplete_todo.done, false);
     }
 
     #[test]
@@ -296,24 +286,6 @@ mod tests {
         app.toggle_mode();
         assert_eq!(app.mode, InputMode::Normal);
         assert!(app.edit_buffer.is_none());
-    }
-
-    #[test]
-    fn editing_next_previous_change_selected_field_and_reset_cursor() {
-        let mut app = App::new(vec![make_todo("desc")]); // description = "desc"
-        app.toggle_mode();
-
-        app.left();
-        let buf = app.edit_buffer.as_ref().unwrap();
-        assert_eq!(buf.selected_field, 0);
-        // the cursor should not be at the end anymore
-        assert_ne!(buf.fields[0].cursor, buf.fields[0].value.chars().count());
-
-        app.next();
-        let buf = app.edit_buffer.as_ref().unwrap();
-        assert_eq!(buf.selected_field, 1);
-        // the previous field should have had its cursor set back to end
-        assert_eq!(buf.fields[0].cursor, buf.fields[0].value.chars().count());
     }
 
     #[test]
@@ -572,14 +544,180 @@ mod tests {
         assert_eq!(app.mode, Normal);
     }
 
+    #[test]
+    fn add_todo_copies_priority_and_inserts_after_selected_in_visual_order() {
+        // priorities: b(1), a(1), c(3) -> visual_order should be [1,0,2] (or [0,1,2] if equal priorities are stable)
+        let mut app = App::new(vec![
+            todo_with("a", Some(1)),
+            todo_with("b", Some(1)),
+            todo_with("c", Some(3)),
+        ]);
+
+        // Select visual idx 0 (the first "1" priority in view)
+        app.selected = 0;
+        // Keep track of which underlying todo that is:
+        let before_selected_under_idx = app.visual_order[app.selected];
+
+        app.add_todo();
+
+        // length grew by 1
+        assert_eq!(app.todos.len(), 4);
+
+        // Find the new todo by description (assuming new() creates an empty description)
+        let new_idx = app
+            .todos
+            .iter()
+            .enumerate()
+            .find(|(_, t)| t.description.is_empty())
+            .map(|(i, _)| i)
+            .expect("new todo not found");
+
+        // New todo should copy priority from the selected
+        assert_eq!(
+            app.todos[new_idx].priority,
+            app.todos[before_selected_under_idx].priority
+        );
+
+        // In visual order, the new todo should appear immediately AFTER the selected visual slot
+        // (i.e., ties keep relative order so we sit right after the selected among equal-priority items)
+        let pos_selected = app
+            .visual_order
+            .iter()
+            .position(|&i| i == before_selected_under_idx)
+            .expect("selected idx not found in visual_order");
+        let pos_new = app
+            .visual_order
+            .iter()
+            .position(|&i| i == new_idx)
+            .expect("new idx not found in visual_order");
+
+        assert_eq!(pos_new, pos_selected + 1);
+    }
+
+    #[test]
+    fn add_todo_appends_when_selected_is_last_in_visual_order() {
+        // priorities: a(0), b(2) -> visual_order [0,1]
+        let mut app = App::new(vec![todo_with("a", Some(0)), todo_with("b", Some(2))]);
+
+        // Select last in visual list (the "b")
+        app.selected = app.visual_order.len() - 1;
+        let selected_under_idx = app.visual_order[app.selected];
+
+        app.add_todo();
+
+        assert_eq!(app.todos.len(), 3);
+
+        // Find new todo
+        let new_idx = app
+            .todos
+            .iter()
+            .enumerate()
+            .find(|(_, t)| t.description.is_empty())
+            .map(|(i, _)| i)
+            .expect("new todo not found");
+
+        // Same priority as selected
+        assert_eq!(
+            app.todos[new_idx].priority,
+            app.todos[selected_under_idx].priority
+        );
+
+        // New should come right after selected in visual order
+        let pos_selected = app
+            .visual_order
+            .iter()
+            .position(|&i| i == selected_under_idx)
+            .unwrap();
+        let pos_new = app.visual_order.iter().position(|&i| i == new_idx).unwrap();
+
+        assert_eq!(pos_new, pos_selected + 1);
+        // …and therefore be the last if selected was last
+        assert_eq!(pos_new, app.visual_order.len() - 1);
+    }
+
+    #[test]
+    fn add_todo_copies_none_priority_when_selected_has_none() {
+        let mut app = App::new(vec![todo_with("a", Some(0)), todo_with("b", None)]);
+
+        // Ensure "b" is the selected visually
+        // visual order should place None after defined priorities
+        app.selected = app
+            .visual_order
+            .iter()
+            .position(|&i| app.todos[i].description == "b")
+            .unwrap();
+
+        let selected_under_idx = app.visual_order[app.selected];
+
+        app.add_todo();
+
+        let new_idx = app
+            .todos
+            .iter()
+            .enumerate()
+            .find(|(_, t)| t.description.is_empty())
+            .map(|(i, _)| i)
+            .expect("new todo not found");
+
+        assert_eq!(app.todos[new_idx].priority, None);
+
+        // It should be right after "b" in visual order
+        let pos_selected = app
+            .visual_order
+            .iter()
+            .position(|&i| i == selected_under_idx)
+            .unwrap();
+        let pos_new = app.visual_order.iter().position(|&i| i == new_idx).unwrap();
+        assert_eq!(pos_new, pos_selected + 1);
+    }
+
+    #[test]
+    fn toggling_edit_mode_when_not_expanded_edits_description_field() {
+        let mut app = App::new(vec![todo_with("a", Some(0))]);
+
+        // Preconditions
+        assert_eq!(app.mode, InputMode::Normal);
+        assert!(app.edit_buffer.is_none());
+        assert!(app.expanded.is_none());
+
+        // Act
+        app.toggle_mode();
+
+        // Assert: we’re editing, buffer exists, and we selected the description field (index 0)
+        assert_eq!(app.mode, InputMode::Editing);
+        let buf = app.edit_buffer.as_ref().expect("edit_buffer should exist");
+        assert_eq!(
+            buf.selected_field, 0,
+            "expected description field when not expanded"
+        );
+    }
+
+    #[test]
+    fn toggling_edit_mode_when_expanded_edits_notes_field() {
+        let mut app = App::new(vec![todo_with("a", Some(0))]);
+
+        // Mark the currently selected todo as expanded
+        app.expanded = Some(app.selected);
+
+        // Preconditions
+        assert_eq!(app.mode, InputMode::Normal);
+        assert!(app.edit_buffer.is_none());
+        assert!(app.expanded.is_some());
+
+        // Act
+        app.toggle_mode();
+
+        // Assert: we’re editing, buffer exists, and we selected the notes field (index 2)
+        assert_eq!(app.mode, InputMode::Editing);
+        let buf = app.edit_buffer.as_ref().expect("edit_buffer should exist");
+        assert_eq!(buf.selected_field, 2, "expected notes field when expanded");
+    }
+
     fn todo_with(desc: &str, prio: Option<u8>) -> TodoItem {
         TodoItem {
             description: desc.into(),
             priority: prio,
-            due: None,
-            tags: None,
             notes: None,
-            done: false,
         }
     }
 
@@ -587,10 +725,7 @@ mod tests {
         TodoItem {
             description: description.into(),
             priority: None,
-            due: None,
-            tags: None,
             notes: None,
-            done: false,
         }
     }
 }
