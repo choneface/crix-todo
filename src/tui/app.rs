@@ -97,12 +97,14 @@ impl App {
     pub fn edit_insert(&mut self, ch: char) {
         if let Some(buf) = self.edit_buffer.as_mut() {
             buf.current_field_mut().insert_char(ch);
+            self.commit_edit()
         }
     }
 
     pub fn edit_backspace(&mut self) {
         if let Some(buf) = self.edit_buffer.as_mut() {
             buf.current_field_mut().backspace();
+            self.commit_edit()
         }
     }
 

@@ -2,12 +2,21 @@
 pub struct FieldBuffer {
     pub value: String,
     pub cursor: usize,
+    pub cursor_visible: bool,
 }
 
 impl FieldBuffer {
     pub fn new(value: String) -> Self {
         let cursor = value.chars().count();
-        Self { value, cursor }
+        Self {
+            value,
+            cursor,
+            cursor_visible: false,
+        }
+    }
+
+    pub fn toggle_visible(&mut self) {
+        self.cursor_visible = !self.cursor_visible
     }
 
     fn byte_index(&self) -> usize {
