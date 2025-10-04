@@ -43,14 +43,7 @@ impl App {
                     self.selected += 1;
                 }
             }
-            InputMode::Editing => {
-                if let Some(buf) = self.edit_buffer.as_mut() {
-                    if buf.selected_field + 1 < 3 {
-                        buf.fields[buf.selected_field].reset_cursor();
-                        buf.selected_field += 1;
-                    }
-                }
-            }
+            InputMode::Editing => {}
         }
     }
 
@@ -61,14 +54,7 @@ impl App {
                     self.selected -= 1;
                 }
             }
-            InputMode::Editing => {
-                if let Some(buf) = self.edit_buffer.as_mut() {
-                    if buf.selected_field > 0 {
-                        buf.fields[buf.selected_field].reset_cursor();
-                        buf.selected_field -= 1;
-                    }
-                }
-            }
+            InputMode::Editing => {}
         }
     }
 
@@ -117,17 +103,27 @@ impl App {
     pub fn toggle_mode(&mut self) {
         if self.mode == InputMode::Normal {
             if self.todos.is_empty() {
-                self.mode = InputMode::Normal;
+                // Already in Normal; nothing to edit.
                 return;
             }
+
             let idx = self.visual_order[self.selected];
             let todo = &self.todos[idx];
+
+            // Create the buffer
             self.edit_buffer = Some(EditBuffer::new(todo));
+
+            // Mutably borrow the buffer to set a field (no move)
+            if let Some(buf) = self.edit_buffer.as_mut() {
+                buf.selected_field = if self.expanded.is_some() { 2 } else { 0 };
+            }
+
             self.mode = InputMode::Editing;
         } else {
-            self.mode = InputMode::Normal;
+            // Commit before clearing the buffer
             self.commit_edit();
             self.edit_buffer = None;
+            self.mode = InputMode::Normal;
         }
     }
 
@@ -290,24 +286,6 @@ mod tests {
         app.toggle_mode();
         assert_eq!(app.mode, InputMode::Normal);
         assert!(app.edit_buffer.is_none());
-    }
-
-    #[test]
-    fn editing_next_previous_change_selected_field_and_reset_cursor() {
-        let mut app = App::new(vec![make_todo("desc")]); // description = "desc"
-        app.toggle_mode();
-
-        app.left();
-        let buf = app.edit_buffer.as_ref().unwrap();
-        assert_eq!(buf.selected_field, 0);
-        // the cursor should not be at the end anymore
-        assert_ne!(buf.fields[0].cursor, buf.fields[0].value.chars().count());
-
-        app.next();
-        let buf = app.edit_buffer.as_ref().unwrap();
-        assert_eq!(buf.selected_field, 1);
-        // the previous field should have had its cursor set back to end
-        assert_eq!(buf.fields[0].cursor, buf.fields[0].value.chars().count());
     }
 
     #[test]
@@ -691,6 +669,48 @@ mod tests {
             .unwrap();
         let pos_new = app.visual_order.iter().position(|&i| i == new_idx).unwrap();
         assert_eq!(pos_new, pos_selected + 1);
+    }
+
+    #[test]
+    fn toggling_edit_mode_when_not_expanded_edits_description_field() {
+        let mut app = App::new(vec![todo_with("a", Some(0))]);
+
+        // Preconditions
+        assert_eq!(app.mode, InputMode::Normal);
+        assert!(app.edit_buffer.is_none());
+        assert!(app.expanded.is_none());
+
+        // Act
+        app.toggle_mode();
+
+        // Assert: we’re editing, buffer exists, and we selected the description field (index 0)
+        assert_eq!(app.mode, InputMode::Editing);
+        let buf = app.edit_buffer.as_ref().expect("edit_buffer should exist");
+        assert_eq!(
+            buf.selected_field, 0,
+            "expected description field when not expanded"
+        );
+    }
+
+    #[test]
+    fn toggling_edit_mode_when_expanded_edits_notes_field() {
+        let mut app = App::new(vec![todo_with("a", Some(0))]);
+
+        // Mark the currently selected todo as expanded
+        app.expanded = Some(app.selected);
+
+        // Preconditions
+        assert_eq!(app.mode, InputMode::Normal);
+        assert!(app.edit_buffer.is_none());
+        assert!(app.expanded.is_some());
+
+        // Act
+        app.toggle_mode();
+
+        // Assert: we’re editing, buffer exists, and we selected the notes field (index 2)
+        assert_eq!(app.mode, InputMode::Editing);
+        let buf = app.edit_buffer.as_ref().expect("edit_buffer should exist");
+        assert_eq!(buf.selected_field, 2, "expected notes field when expanded");
     }
 
     fn todo_with(desc: &str, prio: Option<u8>) -> TodoItem {
