@@ -53,7 +53,7 @@ mod tests {
             TodoItem {
                 description: description.to_string(),
                 priority,
-                notes: None,
+                notes: String::new(),
             },
             expanded,
         )

@@ -12,7 +12,7 @@ impl EditBuffer {
             fields: [
                 FieldBuffer::new(todo.description.clone()),
                 FieldBuffer::new(todo.priority.map_or(String::new(), |p| p.to_string())),
-                FieldBuffer::new(todo.notes.clone().unwrap_or_default()),
+                FieldBuffer::new(todo.notes.clone()),
             ],
             selected_field: 0,
         }
@@ -20,13 +20,8 @@ impl EditBuffer {
 
     pub fn update_todo(&self, todo: &mut TodoItem) {
         todo.description = self.fields[0].value.clone();
-
         todo.priority = self.fields[1].value.trim().parse::<u8>().ok();
-
-        todo.notes = match self.fields[2].value.trim() {
-            "" => None,
-            s => Some(s.to_string()),
-        };
+        todo.notes = self.fields[2].value.clone();
     }
 
     pub fn current_field_mut(&mut self) -> &mut FieldBuffer {
@@ -43,7 +38,7 @@ mod tests {
         TodoItem {
             description: "old desc".into(),
             priority: Some(2),
-            notes: Some("old note".into()),
+            notes: "old note".into(),
         }
     }
 
@@ -80,7 +75,7 @@ mod tests {
 
         assert_eq!(todo.description, "new desc");
         assert_eq!(todo.priority, Some(5));
-        assert_eq!(todo.notes, Some("new note".into()));
+        assert_eq!(todo.notes, "new note");
     }
 
     #[test]

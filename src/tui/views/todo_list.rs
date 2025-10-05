@@ -125,12 +125,7 @@ fn render_row<'a>(idx: usize, row: &Row<'a>, rows: &[Row<'a>]) -> ListItem<'a> {
 
             // Optional notes, rendered as a curved child branch.
             if *is_expanded {
-                if let Some(notes) = &item.notes {
-                    // Child branch under the todo:
-                    // we keep the trunk (│) in the left gutter when more todos follow.
-                    // Then draw the curved child "╰─" into the note.
-                    lines.push(format!("{}╰─ Notes: {}", trunk_gutter, notes));
-                }
+                lines.push(format!("{}╰─ Notes: {}", trunk_gutter, item.notes));
             }
 
             ListItem::new(lines.join("\n"))

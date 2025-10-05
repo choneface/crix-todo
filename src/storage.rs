@@ -8,7 +8,7 @@ use std::path::PathBuf;
 pub struct TodoItem {
     pub description: String,
     pub priority: Option<u8>,
-    pub notes: Option<String>,
+    pub notes: String,
 }
 
 impl TodoItem {
@@ -16,7 +16,7 @@ impl TodoItem {
         TodoItem {
             description: String::new(),
             priority,
-            notes: Some(String::new()),
+            notes: String::new(),
         }
     }
 
@@ -105,12 +105,12 @@ mod tests {
         let todo1 = TodoItem {
             description: "Test 1".to_string(),
             priority: Some(1),
-            notes: Some("first todo".to_string()),
+            notes: "first todo".to_string(),
         };
         let todo2 = TodoItem {
             description: "Test 2".to_string(),
             priority: Some(1),
-            notes: Some("second todo".to_string()),
+            notes: "second todo".to_string(),
         };
 
         let todos = vec![todo1, todo2];

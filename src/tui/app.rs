@@ -723,7 +723,7 @@ mod tests {
         TodoItem {
             description: desc.into(),
             priority: prio,
-            notes: None,
+            notes: String::new(),
         }
     }
 
@@ -731,7 +731,7 @@ mod tests {
         TodoItem {
             description: description.into(),
             priority: None,
-            notes: None,
+            notes: String::new(),
         }
     }
 }
