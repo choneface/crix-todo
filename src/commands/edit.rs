@@ -30,7 +30,7 @@ fn launch_ui(storage: impl Storage) -> Result<(), Box<dyn std::error::Error>> {
     let mut terminal = Terminal::new(backend)?;
 
     loop {
-        terminal.draw(|f| render(f, &app))?;
+        terminal.draw(|f| render(f, &mut app))?;
 
         match app.mode {
             Normal => match poll_input(Duration::from_millis(200), Normal)? {

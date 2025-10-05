@@ -1,5 +1,6 @@
 use crate::storage::TodoItem;
 use crate::tui::app::App;
+use crate::tui::app::InputMode::Editing;
 use crate::tui::view_models::todo_view_model::TodoListViewModel;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
@@ -14,7 +15,7 @@ pub enum Row<'a> {
     },
 }
 
-pub fn render(f: &mut Frame, app: &App) {
+pub fn render(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
@@ -26,6 +27,7 @@ pub fn render(f: &mut Frame, app: &App) {
 
     render_keybindings(f, chunks[0]);
     render_todo_list(f, app, chunks[1]);
+    render_cursor(f, app, chunks[1]);
 }
 
 fn render_todo_list(f: &mut Frame, app: &App, chunk: Rect) {
@@ -63,6 +65,26 @@ fn render_keybindings(f: &mut Frame, rect: Rect) {
     .block(Block::default());
 
     f.render_widget(header, rect);
+}
+
+fn render_cursor(f: &mut Frame, app: &mut App, area: Rect) {
+    if app.mode == Editing {
+        if app.mode == Editing {
+            let buf = app
+                .edit_buffer
+                .as_mut()
+                .expect("editing - edit buffer was null");
+            if app.expanded.is_none() {
+                let x = area.x + 4 + (buf.current_field_mut().cursor as u16);
+                let y = area.y + 2 + (app.selected as u16);
+                f.set_cursor(x, y);
+            } else {
+                let x = area.x + 14 + (buf.current_field_mut().cursor as u16);
+                let y = area.y + 3 + (app.selected as u16);
+                f.set_cursor(x, y);
+            }
+        }
+    }
 }
 
 fn render_row<'a>(idx: usize, row: &Row<'a>, rows: &[Row<'a>]) -> ListItem<'a> {

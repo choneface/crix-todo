@@ -74,8 +74,14 @@ impl App {
         if let Some(&actual_index) = self.visual_order.get(self.selected) {
             if self.expanded == Some(actual_index) {
                 self.expanded = None;
+                if let Some(buf) = self.edit_buffer.as_mut() {
+                    buf.selected_field = 0
+                }
             } else {
                 self.expanded = Some(actual_index);
+                if let Some(buf) = self.edit_buffer.as_mut() {
+                    buf.selected_field = 2
+                }
             }
         }
     }
