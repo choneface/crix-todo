@@ -1,6 +1,5 @@
 use crate::storage::TodoItem;
 use crate::tui::app::App;
-use crate::tui::app::InputMode::Editing;
 use crate::tui::view_models::todo_view_model::TodoListViewModel;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
@@ -25,24 +24,24 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ])
         .split(f.size());
 
+    let vm = &TodoListViewModel::from_app(app);
+
     render_keybindings(f, chunks[0]);
-    render_todo_list(f, app, chunks[1]);
-    render_cursor(f, app, chunks[1]);
+    render_todo_list(f, vm, chunks[1]);
+    render_cursor(f, vm, chunks[1]);
 }
 
-fn render_todo_list(f: &mut Frame, app: &App, chunk: Rect) {
-    let view_model = TodoListViewModel::from_app(app);
-
+fn render_todo_list(f: &mut Frame, vm: &TodoListViewModel, chunk: Rect) {
     // FIX: actually call the renderer with (index, row)
-    let items: Vec<ListItem> = view_model
+    let items: Vec<ListItem> = vm
         .rows
         .iter()
         .enumerate()
-        .map(|(i, row)| render_row(i, row, &view_model.rows))
+        .map(|(i, row)| render_row(i, row, &vm.rows))
         .collect();
 
     let mut state = ListState::default();
-    state.select(view_model.selected_index);
+    state.select(vm.selected_index);
 
     let list = List::new(items)
         .block(Block::default().title("Todos").borders(Borders::ALL))
@@ -67,23 +66,9 @@ fn render_keybindings(f: &mut Frame, rect: Rect) {
     f.render_widget(header, rect);
 }
 
-fn render_cursor(f: &mut Frame, app: &mut App, area: Rect) {
-    if app.mode == Editing {
-        if app.mode == Editing {
-            let buf = app
-                .edit_buffer
-                .as_mut()
-                .expect("editing - edit buffer was null");
-            if app.expanded.is_none() {
-                let x = area.x + 4 + (buf.current_field_mut().cursor as u16);
-                let y = area.y + 2 + (app.selected as u16);
-                f.set_cursor(x, y);
-            } else {
-                let x = area.x + 14 + (buf.current_field_mut().cursor as u16);
-                let y = area.y + 3 + (app.selected as u16);
-                f.set_cursor(x, y);
-            }
-        }
+fn render_cursor(f: &mut Frame, vm: &TodoListViewModel, area: Rect) {
+    if let Some((x_offset, y_offset)) = vm.get_cursor_position() {
+        f.set_cursor(area.x + x_offset, area.y + y_offset)
     }
 }
 

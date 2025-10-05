@@ -1,6 +1,7 @@
 use crate::storage::TodoItem;
 use crate::tui::state::field_buffer::FieldBuffer;
 
+#[derive(Clone)]
 pub struct EditBuffer {
     pub fields: [FieldBuffer; 3], // 0-4: desc, prio, notes
     pub selected_field: usize,
