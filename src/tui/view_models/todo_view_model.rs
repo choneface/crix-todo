@@ -109,6 +109,7 @@ mod tests {
             expanded,
             mode,
             edit_buffer: None,
+            history: vec![],
         };
 
         // keep indexes stable for the test
@@ -259,6 +260,7 @@ mod tests {
             expanded: Some(1),
             mode: InputMode::Normal,
             edit_buffer: None,
+            history: vec![],
         };
 
         let vm = TodoListViewModel::from_app(app);
@@ -297,6 +299,7 @@ mod tests {
             expanded: Some(1),
             mode: InputMode::Normal,
             edit_buffer: None,
+            history: vec![],
         };
 
         let vm = TodoListViewModel::from_app(app);
@@ -327,6 +330,7 @@ mod tests {
             expanded: None,
             mode: InputMode::Normal,
             edit_buffer: None,
+            history: vec![],
         };
 
         let vm = TodoListViewModel::from_app(app);

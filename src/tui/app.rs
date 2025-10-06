@@ -1,10 +1,32 @@
 use crate::storage::{Storage, TodoItem};
 use crate::tui::state::edit_buffer::EditBuffer;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum InputMode {
     Normal,
     Editing,
+}
+
+pub struct AppSnapshot {
+    pub todos: Vec<TodoItem>,
+    pub visual_order: Vec<usize>,
+    pub selected: usize,
+    pub expanded: Option<usize>,
+    pub mode: InputMode,
+    pub edit_buffer: Option<EditBuffer>,
+}
+
+impl AppSnapshot {
+    pub fn from_app(app: &App) -> Self {
+        Self {
+            todos: app.todos.clone(),
+            visual_order: app.visual_order.clone(),
+            selected: app.selected.clone(),
+            expanded: app.expanded.clone(),
+            mode: app.mode.clone(),
+            edit_buffer: app.edit_buffer.clone(),
+        }
+    }
 }
 
 pub struct App {
@@ -14,6 +36,7 @@ pub struct App {
     pub expanded: Option<usize>,
     pub mode: InputMode,
     pub edit_buffer: Option<EditBuffer>,
+    pub history: Vec<AppSnapshot>,
 }
 
 impl App {
@@ -33,7 +56,29 @@ impl App {
             expanded: None,
             mode: InputMode::Normal,
             edit_buffer: None,
+            history: Vec::new(),
         }
+    }
+
+    pub fn undo(&mut self) {
+        if self.history.len() < 1 {
+            return;
+        }
+        let past_state = self.history.pop().expect("history empty");
+        self.restore(past_state);
+    }
+
+    fn restore(&mut self, app: AppSnapshot) {
+        self.todos = app.todos.clone();
+        self.visual_order = app.visual_order.clone();
+        self.selected = app.selected.clone();
+        self.expanded = app.expanded;
+        self.mode = app.mode.clone();
+        self.edit_buffer = app.edit_buffer.clone();
+    }
+
+    fn persist_backup(&mut self) {
+        self.history.push(AppSnapshot::from_app(self));
     }
 
     pub fn next(&mut self) {
@@ -113,6 +158,9 @@ impl App {
                 return;
             }
 
+            // before preparing state for edit, persist backup
+            self.persist_backup();
+
             let idx = self.visual_order[self.selected];
             let todo = &self.todos[idx];
 
@@ -160,6 +208,7 @@ impl App {
 
     pub fn remove_selected(&mut self) {
         if let Some(&idx) = self.visual_order.get(self.selected) {
+            self.persist_backup();
             self.todos.remove(idx);
             self.visual_order.remove(self.selected);
             for i in self.visual_order.iter_mut() {
@@ -174,6 +223,7 @@ impl App {
         }
     }
     pub fn promote_selected(&mut self) {
+        self.persist_backup();
         let idx = self.visual_order[self.selected];
         let new_priority = match self.todos[idx].priority {
             Some(p) if p > 0 => Some(p - 1),
@@ -186,6 +236,7 @@ impl App {
     }
 
     pub fn demote_selected(&mut self) {
+        self.persist_backup();
         let idx = self.visual_order[self.selected];
         let new_priority = match self.todos[idx].priority {
             // 99 == None
@@ -220,6 +271,7 @@ impl App {
 
     pub fn add_todo(&mut self) {
         // first add a new empty todo
+        self.persist_backup();
         if let Some(idx) = self.visual_order.get(self.selected) {
             if let Some(current) = self.todos.get(*idx) {
                 let todo = TodoItem::new(current.priority);
@@ -237,6 +289,7 @@ mod tests {
     use super::*;
     use crate::storage::MockStorage;
     use crate::tui::app::InputMode::Normal;
+    use InputMode::Editing;
     use mockall::predicate::eq;
 
     #[test]
@@ -284,7 +337,7 @@ mod tests {
 
         // enter
         app.toggle_mode();
-        assert_eq!(app.mode, InputMode::Editing);
+        assert_eq!(app.mode, Editing);
         assert!(app.edit_buffer.is_some());
         assert_eq!(app.edit_buffer.as_ref().unwrap().selected_field, 0);
 
@@ -690,7 +743,7 @@ mod tests {
         app.toggle_mode();
 
         // Assert: we’re editing, buffer exists, and we selected the description field (index 0)
-        assert_eq!(app.mode, InputMode::Editing);
+        assert_eq!(app.mode, Editing);
         let buf = app.edit_buffer.as_ref().expect("edit_buffer should exist");
         assert_eq!(
             buf.selected_field, 0,
@@ -714,9 +767,126 @@ mod tests {
         app.toggle_mode();
 
         // Assert: we’re editing, buffer exists, and we selected the notes field (index 2)
-        assert_eq!(app.mode, InputMode::Editing);
+        assert_eq!(app.mode, Editing);
         let buf = app.edit_buffer.as_ref().expect("edit_buffer should exist");
         assert_eq!(buf.selected_field, 2, "expected notes field when expanded");
+    }
+
+    #[test]
+    fn undo_noop_when_history_empty() {
+        let before = App::new(vec![make_todo("a"), make_todo("b")]);
+        let mut app = App::new(vec![make_todo("a"), make_todo("b")]);
+
+        // No snapshots yet
+        assert_eq!(app.history.len(), 0);
+
+        app.undo(); // should not panic and should not change state
+
+        assert_eq!(app.todos.len(), before.todos.len());
+        assert_eq!(app.visual_order, before.visual_order);
+        assert_eq!(app.selected, before.selected);
+        assert_eq!(app.expanded, before.expanded);
+        assert_eq!(app.mode, before.mode);
+        assert_eq!(app.edit_buffer.is_none(), true);
+    }
+
+    #[test]
+    fn undo_restores_state_after_remove_selected() {
+        // todos: b(1), a(2), c(3)
+        let mut app = App::new(vec![
+            todo_with("a", Some(2)),
+            todo_with("b", Some(1)),
+            todo_with("c", Some(3)),
+        ]);
+
+        // select visual 0 -> "b"
+        app.selected = 0;
+
+        // removal should push snapshot
+        let history_before = app.history.len();
+        app.remove_selected();
+        assert_eq!(app.history.len(), history_before + 1);
+        assert!(app.todos.iter().all(|t| t.description != "b"));
+
+        // undo should bring "b" back and restore selection/visual_order
+        app.undo();
+        assert!(app.todos.iter().any(|t| t.description == "b"));
+        assert_eq!(app.visual_order, vec![1, 0, 2]); // b,a,c
+        assert_eq!(app.selected, 0); // still pointing at "b" visually
+    }
+
+    #[test]
+    fn undo_restores_priority_and_position_after_promote() {
+        let mut app = App::new(vec![
+            todo_with("a", Some(3)), // idx 0
+            todo_with("b", Some(1)), // idx 1
+        ]);
+        // visual: b(1), a(3) => [1,0]
+        assert_eq!(app.visual_order, vec![1, 0]);
+
+        // select "a" visually (index 1)
+        app.selected = 1;
+
+        let history_before = app.history.len();
+        app.promote_selected(); // pushes snapshot
+        assert_eq!(app.history.len(), history_before + 1);
+
+        // "a" went from 3 -> 2, and might move in the view
+        let a_idx = app.visual_order[app.selected];
+        assert_eq!(app.todos[a_idx].description, "a");
+        assert_eq!(app.todos[a_idx].priority, Some(2));
+
+        // undo brings us back
+        app.undo();
+        // visual back to [1,0]
+        assert_eq!(app.visual_order, vec![1, 0]);
+        // "a" back to priority 3
+        let a_under = app.visual_order[1];
+        assert_eq!(app.todos[a_under].description, "a");
+        assert_eq!(app.todos[a_under].priority, Some(3));
+    }
+
+    #[test]
+    fn undo_restores_mode_and_buffer_when_entering_edit_mode() {
+        let mut app = App::new(vec![make_todo("x")]);
+
+        // enter edit mode (this pushes a snapshot before flipping mode)
+        let history_before = app.history.len();
+        app.toggle_mode();
+        assert_eq!(app.history.len(), history_before + 1);
+        assert_eq!(app.mode, Editing);
+        assert!(app.edit_buffer.is_some());
+
+        // undo should take us back to Normal with no buffer
+        app.undo();
+        assert_eq!(app.mode, Normal);
+        assert!(app.edit_buffer.is_none());
+    }
+
+    #[test]
+    fn undo_multiple_steps_walks_back_in_time() {
+        let mut app = App::new(vec![todo_with("a", Some(3))]);
+
+        // Step 1: promote (3 -> 2)
+        app.selected = 0;
+        app.promote_selected();
+        let idx = app.visual_order[app.selected];
+        assert_eq!(app.todos[idx].priority, Some(2));
+
+        // Step 2: demote (2 -> 3)
+        app.demote_selected();
+        let idx = app.visual_order[app.selected];
+        assert_eq!(app.todos[idx].priority, Some(3));
+
+        // Undo Step 2: back to (2)
+        app.undo();
+        let idx = app.visual_order[app.selected];
+        assert_eq!(app.todos[idx].priority, Some(2));
+
+        // Undo Step 1: back to (3)
+        app.undo();
+        let idx = app.visual_order[app.selected];
+        assert_eq!(app.todos[idx].priority, Some(3));
     }
 
     fn todo_with(desc: &str, prio: Option<u8>) -> TodoItem {

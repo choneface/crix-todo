@@ -17,6 +17,7 @@ pub enum InputEvent {
     Char(char),
     TodoSplit,
     AddTodo,
+    Undo,
     None,
 }
 
@@ -46,6 +47,7 @@ fn match_key_code_for_normal_mode(code: KeyCode) -> InputEvent {
         KeyCode::Char('l') => InputEvent::DemotePriority,
         KeyCode::Char('b') => InputEvent::TodoSplit,
         KeyCode::Char('=') => InputEvent::AddTodo,
+        KeyCode::Char('u') => InputEvent::Undo,
         _ => InputEvent::None,
     }
 }
