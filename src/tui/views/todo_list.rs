@@ -55,7 +55,7 @@ fn render_keybindings(f: &mut Frame, rect: Rect) {
         Span::raw("[j/k] Move    "),
         Span::raw("[⏎] Toggle Done    "),
         Span::raw("[Space] Expand    "),
-        Span::raw("[e] Edit    "),
+        Span::raw("[i] Edit    "),
         Span::raw("[⌫] Delete    "),
         Span::raw("[p/l] Toggle Priority    "),
         Span::raw("[b] Split Todo    "),

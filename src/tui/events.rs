@@ -41,7 +41,7 @@ fn match_key_code_for_normal_mode(code: KeyCode) -> InputEvent {
         KeyCode::Left => InputEvent::Left,
         KeyCode::Right => InputEvent::Right,
         KeyCode::Char(' ') => InputEvent::ToggleExpand,
-        KeyCode::Char('e') => InputEvent::EnableEditing,
+        KeyCode::Char('i') => InputEvent::EnableEditing,
         KeyCode::Backspace => InputEvent::Backspace,
         KeyCode::Char('p') => InputEvent::PromotePriority,
         KeyCode::Char('l') => InputEvent::DemotePriority,
