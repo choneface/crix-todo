@@ -5,6 +5,7 @@ use crate::tui::state::edit_buffer::EditBuffer;
 pub enum InputMode {
     Normal,
     Editing,
+    HelpMenu,
 }
 
 pub struct AppSnapshot {
@@ -88,7 +89,7 @@ impl App {
                     self.selected += 1;
                 }
             }
-            InputMode::Editing => {}
+            _ => {}
         }
     }
 
@@ -99,7 +100,7 @@ impl App {
                     self.selected -= 1;
                 }
             }
-            InputMode::Editing => {}
+            _ => {}
         }
     }
 
@@ -178,6 +179,14 @@ impl App {
             self.commit_edit();
             self.edit_buffer = None;
             self.mode = InputMode::Normal;
+        }
+    }
+
+    pub fn toggle_help(&mut self) {
+        if self.mode == InputMode::HelpMenu {
+            self.mode = InputMode::Normal;
+        } else {
+            self.mode = InputMode::HelpMenu
         }
     }
 
@@ -888,6 +897,101 @@ mod tests {
         let idx = app.visual_order[app.selected];
         assert_eq!(app.todos[idx].priority, Some(3));
     }
+
+    #[test]
+    fn help_toggle_from_normal_round_trips_back_to_normal() {
+        let mut app = App::new(vec![make_todo("a")]);
+        assert_eq!(app.mode, InputMode::Normal);
+
+        // Enter help
+        app.toggle_help();
+        assert_eq!(app.mode, InputMode::HelpMenu);
+
+        // Exit help -> back to Normal (per current implementation)
+        app.toggle_help();
+        assert_eq!(app.mode, InputMode::Normal);
+    }
+
+    #[test]
+    fn help_toggle_from_editing_enters_help_then_returns_to_normal_buffer_stays() {
+        let mut app = App::new(vec![todo_with("a", Some(0))]);
+
+        // Enter Editing
+        app.toggle_mode();
+        assert_eq!(app.mode, InputMode::Editing);
+        let buf_ptr_before: *const _ = app.edit_buffer.as_ref().unwrap();
+        let selected_field_before = app.edit_buffer.as_ref().unwrap().selected_field;
+
+        // Enter Help
+        app.toggle_help();
+        assert_eq!(app.mode, InputMode::HelpMenu);
+        // Buffer remains present & same instance
+        assert!(app.edit_buffer.is_some());
+        let buf_ptr_help: *const _ = app.edit_buffer.as_ref().unwrap();
+        assert_eq!(buf_ptr_help, buf_ptr_before);
+        assert_eq!(app.edit_buffer.as_ref().unwrap().selected_field, selected_field_before);
+
+        // Exit Help -> current behavior returns to Normal (not Editing)
+        app.toggle_help();
+        assert_eq!(app.mode, InputMode::Normal);
+        // Buffer is still present per current implementation
+        assert!(app.edit_buffer.is_some());
+        let buf_ptr_after: *const _ = app.edit_buffer.as_ref().unwrap();
+        assert_eq!(buf_ptr_after, buf_ptr_before);
+    }
+
+    #[test]
+    fn next_prev_do_not_move_selection_in_help_menu() {
+        let mut app = App::new(vec![make_todo("1"), make_todo("2"), make_todo("3")]);
+        assert_eq!(app.selected, 0);
+
+        // Enter Help from Normal
+        app.toggle_help();
+        assert_eq!(app.mode, InputMode::HelpMenu);
+
+        // Attempt to move selection — should no-op in Help (next/previous only work in Normal)
+        app.next();
+        assert_eq!(app.selected, 0);
+        app.previous();
+        assert_eq!(app.selected, 0);
+
+        // Leave Help back to Normal; movement should work again
+        app.toggle_help();
+        assert_eq!(app.mode, InputMode::Normal);
+        app.next();
+        assert_eq!(app.selected, 1);
+    }
+
+    #[test]
+    fn help_toggle_from_normal_does_not_create_buffer_or_change_selection() {
+        let mut app = App::new(vec![make_todo("a"), make_todo("b")]);
+        app.selected = 1;
+        assert!(app.edit_buffer.is_none());
+
+        // Enter Help from Normal
+        app.toggle_help();
+        assert_eq!(app.mode, InputMode::HelpMenu);
+        assert!(app.edit_buffer.is_none(), "entering help from Normal should not create a buffer");
+        assert_eq!(app.selected, 1, "selection should remain unchanged while opening help");
+
+        // Exit Help to Normal
+        app.toggle_help();
+        assert_eq!(app.mode, InputMode::Normal);
+        assert!(app.edit_buffer.is_none());
+        assert_eq!(app.selected, 1);
+    }
+
+    #[test]
+    fn help_toggle_does_not_affect_history() {
+        let mut app = App::new(vec![make_todo("a")]);
+        let history_before = app.history.len();
+
+        app.toggle_help();
+        app.toggle_help();
+
+        assert_eq!(app.history.len(), history_before, "help toggle should not push snapshots");
+    }
+
 
     fn todo_with(desc: &str, prio: Option<u8>) -> TodoItem {
         TodoItem {

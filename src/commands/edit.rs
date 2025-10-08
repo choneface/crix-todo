@@ -4,7 +4,7 @@ use std::time::Duration;
 use crate::storage::Storage;
 use crate::tui::{app::App, events::poll_input, ui::render};
 
-use crate::tui::app::InputMode::{Editing, Normal};
+use crate::tui::app::InputMode::{Editing, HelpMenu, Normal};
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
@@ -50,6 +50,7 @@ fn launch_ui(storage: impl Storage) -> Result<(), Box<dyn std::error::Error>> {
                 crate::tui::events::InputEvent::TodoSplit => app.split_current(),
                 crate::tui::events::InputEvent::AddTodo => app.add_todo(),
                 crate::tui::events::InputEvent::Undo => app.undo(),
+                crate::tui::events::InputEvent::HelpToggle => app.toggle_help(),
                 _ => {}
             },
             Editing => match poll_input(Duration::from_millis(200), Editing)? {
@@ -60,6 +61,10 @@ fn launch_ui(storage: impl Storage) -> Result<(), Box<dyn std::error::Error>> {
                 crate::tui::events::InputEvent::DisableEditing => app.toggle_mode(),
                 crate::tui::events::InputEvent::Backspace => app.edit_backspace(),
                 crate::tui::events::InputEvent::Char(c) => app.edit_insert(c),
+                _ => {}
+            },
+            HelpMenu => match poll_input(Duration::from_millis(200), HelpMenu)? {
+                crate::tui::events::InputEvent::Quit => app.toggle_help(),
                 _ => {}
             },
         }

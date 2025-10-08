@@ -52,13 +52,7 @@ fn render_todo_list(f: &mut Frame, vm: &TodoListViewModel, chunk: Rect) {
 
 fn render_keybindings(f: &mut Frame, rect: Rect) {
     let header = Paragraph::new(Line::from(vec![
-        Span::raw("[j/k] Move    "),
-        Span::raw("[⏎] Toggle Done    "),
-        Span::raw("[Space] Expand    "),
-        Span::raw("[i] Edit    "),
-        Span::raw("[⌫] Delete    "),
-        Span::raw("[p/l] Toggle Priority    "),
-        Span::raw("[b] Split Todo    "),
+        Span::raw("[h] Help    "),
         Span::raw("[Esc] Quit"),
     ]))
     .block(Block::default());
