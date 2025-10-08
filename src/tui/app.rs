@@ -929,7 +929,10 @@ mod tests {
         assert!(app.edit_buffer.is_some());
         let buf_ptr_help: *const _ = app.edit_buffer.as_ref().unwrap();
         assert_eq!(buf_ptr_help, buf_ptr_before);
-        assert_eq!(app.edit_buffer.as_ref().unwrap().selected_field, selected_field_before);
+        assert_eq!(
+            app.edit_buffer.as_ref().unwrap().selected_field,
+            selected_field_before
+        );
 
         // Exit Help -> current behavior returns to Normal (not Editing)
         app.toggle_help();
@@ -971,8 +974,14 @@ mod tests {
         // Enter Help from Normal
         app.toggle_help();
         assert_eq!(app.mode, InputMode::HelpMenu);
-        assert!(app.edit_buffer.is_none(), "entering help from Normal should not create a buffer");
-        assert_eq!(app.selected, 1, "selection should remain unchanged while opening help");
+        assert!(
+            app.edit_buffer.is_none(),
+            "entering help from Normal should not create a buffer"
+        );
+        assert_eq!(
+            app.selected, 1,
+            "selection should remain unchanged while opening help"
+        );
 
         // Exit Help to Normal
         app.toggle_help();
@@ -989,9 +998,12 @@ mod tests {
         app.toggle_help();
         app.toggle_help();
 
-        assert_eq!(app.history.len(), history_before, "help toggle should not push snapshots");
+        assert_eq!(
+            app.history.len(),
+            history_before,
+            "help toggle should not push snapshots"
+        );
     }
-
 
     fn todo_with(desc: &str, prio: Option<u8>) -> TodoItem {
         TodoItem {
