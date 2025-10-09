@@ -11,38 +11,53 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 “Clear eyes. Full hearts. No distractions.”
 
 Version **1.0.0 (Saracen)** marks the first major release of `crix-todo`.  
-This release is a full redesign focused on simplicity, speed, and focus.
+This release is a complete overhaul focused on speed, clarity, and simplicity.
 
 #### Added
-- Unified single-command workflow: launch everything with `todo`
+- Unified single-command workflow — launch everything with:
+  ```
+  todo
+  ```
 - Inline todo creation (`=`) directly within the TUI
 - Inline editing for titles and notes (`i`)
 - Undo functionality (`u`) to revert the last action
 - Tree-style visual layout for todos and notes
 - Local JSON storage with instant persistence
-- Task splitting (`b`) for dividing long tasks
+- Task splitting (`b`) to break a todo into part 1 and part 2
+- **New keybindings help menu (`h`)** for quick reference inside the TUI
+- Edit Mode navigation for cursor movement and text editing
 
 #### Changed
-- Removed `add` and `list` CLI subcommands — replaced with a unified TUI
-- Removed “done” state; completed todos are now deleted
-- Removed due dates, tags, and extra metadata for a leaner UX
+- Removed `add` and `list` CLI subcommands — replaced with a unified TUI experience
+- Removed “done” state; completed todos are now deleted instead of marked
+- Removed due dates, tags, and extra metadata for a leaner workflow
+- Redesigned TUI layout with clean borders and indentation
 - Simplified file structure and startup behavior
-- Redesigned TUI layout with modern borders and indentation
 
-#### Keybindings
-| Key | Action |
-|-----|---------|
-| **j / k** | Move selection |
-| **Space** | Expand or collapse todo |
-| **i** | Edit (title or notes) |
-| **=** | Add a new todo |
-| **⌫ (Backspace)** | Delete selected todo |
-| **p / l** | Toggle priority |
-| **b** | Split todo into part 1 and part 2 |
-| **u** | Undo last action |
-| **Esc** | Quit TUI |
+#### Keybindings Overview
 
-#### 💡 Philosophy
+**Normal Mode**
+```
+╭─ [j/k] Move  
+├─ [Space] Expand  
+├─ [i] Edit  
+├─ [⌫] Delete  
+├─ [p/l] Toggle Priority  
+├─ [b] Split Todo  
+├─ [u] Undo  
+├─ [h] Show Keybindings  
+╰─ [Esc] Quit
+```
+
+**Edit Mode**
+```
+╭─ [Char/Space] Input Char  
+├─ [←/→] Move Cursor  
+├─ [⌫] Backspace  
+╰─ [Esc] Return to Normal Mode
+```
+
+#### Philosophy
 The Saracen release embodies clarity and decisiveness.  
 No menus, no clutter — just a direct connection between your keyboard and your focus.  
 It’s the purest form of task management: minimal UI, maximal control.
@@ -50,11 +65,12 @@ It’s the purest form of task management: minimal UI, maximal control.
 ---
 
 ## [Unreleased]
-### 🚧 Planned
-- Cross-platform sync via optional remote storage
-- Custom themes and color profiles
-- Smart grouping (e.g., by context or priority)
-- Export/import support for `.json` and `.csv`
+### Planned
+- Theming and color customization
+- Search and filter functionality
+- Persistent window layout state
+- Optional remote sync for cross-device use
+- Export and import for `.json` and `.csv`
 
 ---
 

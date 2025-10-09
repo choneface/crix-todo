@@ -59,17 +59,28 @@ Priority 1
 
 ## ⌨️ TUI Keybindings
 
-| Key / Combo | Action |
-|--------------|---------|
-| **j / k** | Move selection up or down |
-| **Space** | Expand or collapse todo |
-| **i** | Edit (title if collapsed, notes if expanded) |
-| **=** | Add a new todo |
-| **⌫ (Backspace)** | Delete selected todo |
-| **p / l** | Toggle priority up/down |
-| **b** | Split a todo into part 1 and part 2 |
-| **u** | Undo last action |
-| **Esc** | Quit the TUI |
+**Normal Mode**
+```
+╭─ [j/k] Move selection up or down  
+├─ [Space] Expand or collapse todo  
+├─ [i] Edit (title if collapsed, notes if expanded)  
+├─ [=] Add a new todo  
+├─ [⌫] Delete selected todo  
+├─ [p/l] Toggle priority up/down  
+├─ [b] Split a todo into part 1 and part 2  
+├─ [u] Undo last action  
+├─ [h] Show keybindings help menu  
+╰─ [Esc] Quit the TUI
+```
+
+**Edit Mode**
+```
+╭─ [Char/Space] Input character  
+├─ [←/→] Move cursor  
+├─ [⌫] Backspace  
+╰─ [Esc] Return to Normal Mode
+```
+
 
 ---
 
