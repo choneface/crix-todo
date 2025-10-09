@@ -81,7 +81,6 @@ Priority 1
 ╰─ [Esc] Return to Normal Mode
 ```
 
-
 ---
 
 ## 📂 Data Storage
