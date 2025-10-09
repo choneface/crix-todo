@@ -8,7 +8,6 @@ pub enum InputEvent {
     Up,
     Left,
     Right,
-    ToggleDone,
     ToggleExpand,
     EnableEditing,
     DisableEditing,
@@ -17,6 +16,9 @@ pub enum InputEvent {
     DemotePriority,
     Char(char),
     TodoSplit,
+    AddTodo,
+    Undo,
+    HelpToggle,
     None,
 }
 
@@ -26,6 +28,7 @@ pub fn poll_input(timeout: Duration, mode: InputMode) -> std::io::Result<InputEv
             return Ok(match mode {
                 InputMode::Normal => match_key_code_for_normal_mode(key.code),
                 InputMode::Editing => match_key_code_for_edit_mode(key.code),
+                InputMode::HelpMenu => match_key_code_for_help_mode(key.code),
             });
         }
     }
@@ -39,13 +42,15 @@ fn match_key_code_for_normal_mode(code: KeyCode) -> InputEvent {
         KeyCode::Char('k') => InputEvent::Up,
         KeyCode::Left => InputEvent::Left,
         KeyCode::Right => InputEvent::Right,
-        KeyCode::Enter => InputEvent::ToggleDone,
         KeyCode::Char(' ') => InputEvent::ToggleExpand,
-        KeyCode::Char('e') => InputEvent::EnableEditing,
+        KeyCode::Char('i') => InputEvent::EnableEditing,
         KeyCode::Backspace => InputEvent::Backspace,
         KeyCode::Char('p') => InputEvent::PromotePriority,
         KeyCode::Char('l') => InputEvent::DemotePriority,
         KeyCode::Char('b') => InputEvent::TodoSplit,
+        KeyCode::Char('=') => InputEvent::AddTodo,
+        KeyCode::Char('u') => InputEvent::Undo,
+        KeyCode::Char('h') => InputEvent::HelpToggle,
         _ => InputEvent::None,
     }
 }
@@ -58,8 +63,15 @@ fn match_key_code_for_edit_mode(code: KeyCode) -> InputEvent {
         KeyCode::Right => InputEvent::Right,
         KeyCode::Esc => InputEvent::DisableEditing,
         KeyCode::Backspace => InputEvent::Backspace,
-        KeyCode::Enter => InputEvent::ToggleDone,
         KeyCode::Char(c) => InputEvent::Char(c),
+        _ => InputEvent::None,
+    }
+}
+
+fn match_key_code_for_help_mode(code: KeyCode) -> InputEvent {
+    match code {
+        KeyCode::Char('h') => InputEvent::Quit,
+        KeyCode::Esc => InputEvent::Quit,
         _ => InputEvent::None,
     }
 }

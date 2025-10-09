@@ -30,10 +30,6 @@ impl FieldBuffer {
         self.cursor = self.clamp(self.cursor.saturating_add(1));
     }
 
-    pub fn reset_cursor(&mut self) {
-        self.cursor = self.value.chars().count();
-    }
-
     pub fn insert_char(&mut self, ch: char) {
         let idx = self.byte_index();
         self.value.insert(idx, ch);
@@ -59,14 +55,6 @@ mod tests {
     #[test]
     fn new_starts_cursor_at_end() {
         let buf = FieldBuffer::new("abc".to_string());
-        assert_eq!(buf.cursor, 3);
-    }
-
-    #[test]
-    fn reset_cursor_jumps_to_end() {
-        let mut buf = FieldBuffer::new("abc".to_string());
-        buf.move_left();
-        buf.reset_cursor();
         assert_eq!(buf.cursor, 3);
     }
 

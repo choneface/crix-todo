@@ -14,7 +14,7 @@ pub enum Row<'a> {
     },
 }
 
-pub fn render(f: &mut Frame, app: &App) {
+pub fn render(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
@@ -24,16 +24,24 @@ pub fn render(f: &mut Frame, app: &App) {
         ])
         .split(f.size());
 
+    let vm = &TodoListViewModel::from_app(app);
+
     render_keybindings(f, chunks[0]);
-    render_todo_list(f, app, chunks[1]);
+    render_todo_list(f, vm, chunks[1]);
+    render_cursor(f, vm, chunks[1]);
 }
 
-fn render_todo_list(f: &mut Frame, app: &App, chunk: Rect) {
-    let view_model = TodoListViewModel::from_app(app);
-    let items: Vec<ListItem> = view_model.rows.iter().map(render_row).collect();
+fn render_todo_list(f: &mut Frame, vm: &TodoListViewModel, chunk: Rect) {
+    // FIX: actually call the renderer with (index, row)
+    let items: Vec<ListItem> = vm
+        .rows
+        .iter()
+        .enumerate()
+        .map(|(i, row)| render_row(i, row, &vm.rows))
+        .collect();
 
     let mut state = ListState::default();
-    state.select(view_model.selected_index);
+    state.select(vm.selected_index);
 
     let list = List::new(items)
         .block(Block::default().title("Todos").borders(Borders::ALL))
@@ -44,13 +52,7 @@ fn render_todo_list(f: &mut Frame, app: &App, chunk: Rect) {
 
 fn render_keybindings(f: &mut Frame, rect: Rect) {
     let header = Paragraph::new(Line::from(vec![
-        Span::raw("[j/k] Move    "),
-        Span::raw("[⏎] Toggle Done    "),
-        Span::raw("[Space] Expand    "),
-        Span::raw("[e] Edit    "),
-        Span::raw("[⌫] Delete    "),
-        Span::raw("[p/l] Toggle Priority    "),
-        Span::raw("[b] Split Todo    "),
+        Span::raw("[h] Help    "),
         Span::raw("[Esc] Quit"),
     ]))
     .block(Block::default());
@@ -58,28 +60,51 @@ fn render_keybindings(f: &mut Frame, rect: Rect) {
     f.render_widget(header, rect);
 }
 
-fn render_row<'a>(row: &Row) -> ListItem<'a> {
-    match row {
-        Row::Header(text) => ListItem::new(text.clone()),
-        Row::Todo {
-            item, is_expanded, ..
-        } => {
-            let checkbox = if item.done { "[x]" } else { "[ ]" };
-            let mut lines = vec![format!(" -  {} {}", checkbox, item.description)];
+fn render_cursor(f: &mut Frame, vm: &TodoListViewModel, area: Rect) {
+    if let Some((x_offset, y_offset)) = vm.get_cursor_position() {
+        f.set_cursor(area.x + x_offset, area.y + y_offset)
+    }
+}
 
+fn render_row<'a>(idx: usize, row: &Row<'a>, rows: &[Row<'a>]) -> ListItem<'a> {
+    match row {
+        Row::Header(text) => {
+            // Headers are printed plainly (you could add styling here if you like)
+            ListItem::new(text.clone())
+        }
+        Row::Todo { item, is_expanded } => {
+            // Determine neighbors and whether we're the first/last todo in the current group.
+            let prev = idx.checked_sub(1).and_then(|i| rows.get(i));
+            let next = rows.get(idx + 1);
+
+            let prev_is_header = matches!(prev, Some(Row::Header(_))) || prev.is_none();
+            let next_is_header = matches!(next, Some(Row::Header(_))) || next.is_none();
+
+            // Choose the connector for this todo line
+            // First todo under a header -> "╭─", last -> "╰─", middle -> "├─"
+            let todo_connector = if prev_is_header && next_is_header {
+                // single item group (both first and last)
+                "╰─"
+            } else if prev_is_header {
+                "╭─"
+            } else if next_is_header {
+                "╰─"
+            } else {
+                "├─"
+            };
+
+            // Left gutter that continues vertical trunk if there are following siblings in the same group
+            // If we're NOT last, keep a vertical line "│  " so child rows look connected.
+            let trunk_gutter = if next_is_header { "   " } else { "│  " };
+
+            let mut lines = Vec::new();
+
+            // The todo line
+            lines.push(format!("{} {}", todo_connector, item.description));
+
+            // Optional notes, rendered as a curved child branch.
             if *is_expanded {
-                if let Some(p) = item.priority {
-                    lines.push(format!("   Priority: {}", p));
-                }
-                if let Some(due) = &item.due {
-                    lines.push(format!("   Due: {}", due));
-                }
-                if let Some(tags) = &item.tags {
-                    lines.push(format!("   Tags: {:?}", tags));
-                }
-                if let Some(notes) = &item.notes {
-                    lines.push(format!("   Notes: {}", notes));
-                }
+                lines.push(format!("{}╰─ Notes: {}", trunk_gutter, item.notes));
             }
 
             ListItem::new(lines.join("\n"))

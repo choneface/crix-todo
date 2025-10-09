@@ -8,20 +8,22 @@ use std::path::PathBuf;
 pub struct TodoItem {
     pub description: String,
     pub priority: Option<u8>,
-    pub due: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub done: bool,
-    pub notes: Option<String>,
+    pub notes: String,
 }
 
 impl TodoItem {
+    pub fn new(priority: Option<u8>) -> TodoItem {
+        TodoItem {
+            description: String::new(),
+            priority,
+            notes: String::new(),
+        }
+    }
+
     pub fn create_part_two(todo: TodoItem) -> TodoItem {
         TodoItem {
             description: todo.description + " - part 2",
             priority: todo.priority,
-            due: todo.due,
-            tags: todo.tags,
-            done: false,
             notes: todo.notes,
         }
     }
@@ -31,7 +33,6 @@ impl TodoItem {
 pub trait Storage {
     fn load_items(&self) -> io::Result<Vec<TodoItem>>;
     fn save_items(&self, items: &[TodoItem]) -> io::Result<()>;
-    fn add_item(&self, item: TodoItem) -> io::Result<()>;
 }
 
 pub struct FileStorage {
@@ -74,12 +75,6 @@ impl Storage for FileStorage {
         file.write_all(json.as_bytes())?;
         Ok(())
     }
-
-    fn add_item(&self, item: TodoItem) -> io::Result<()> {
-        let mut items = self.load_items()?;
-        items.push(item);
-        self.save_items(&items)
-    }
 }
 
 #[cfg(test)]
@@ -103,29 +98,6 @@ mod tests {
     }
 
     #[test]
-    fn test_save_and_load_single_item() {
-        let file = NamedTempFile::new().unwrap();
-        let storage = FileStorage::new(file.path().to_str().unwrap());
-
-        let todo = TodoItem {
-            description: "Test".to_string(),
-            priority: Some(1),
-            due: Some("2021-01-01".to_string()),
-            tags: Some(vec!["tag1".to_string(), "tag2".to_string()]),
-            done: false,
-            notes: Some("Notes".to_string()),
-        };
-
-        storage.add_item(todo.clone()).unwrap();
-
-        let todos_from_storage = storage.load_items().unwrap();
-        assert_eq!(todos_from_storage.len(), 1);
-
-        let todo_from_storage = &todos_from_storage[0];
-        assert_eq!(todo_from_storage, &todo)
-    }
-
-    #[test]
     fn test_save_and_load_multiple_items() {
         let file = NamedTempFile::new().unwrap();
         let storage = FileStorage::new(file.path().to_str().unwrap());
@@ -133,18 +105,12 @@ mod tests {
         let todo1 = TodoItem {
             description: "Test 1".to_string(),
             priority: Some(1),
-            due: Some("2021-01-01".to_string()),
-            tags: Some(vec!["first".to_string(), "todo".to_string()]),
-            done: false,
-            notes: Some("first todo".to_string()),
+            notes: "first todo".to_string(),
         };
         let todo2 = TodoItem {
             description: "Test 2".to_string(),
             priority: Some(1),
-            due: Some("2021-02-02".to_string()),
-            tags: Some(vec!["second".to_string(), "todo".to_string()]),
-            done: true,
-            notes: Some("second todo".to_string()),
+            notes: "second todo".to_string(),
         };
 
         let todos = vec![todo1, todo2];
