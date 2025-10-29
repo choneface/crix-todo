@@ -1,11 +1,11 @@
-use crate::tui::app::App;
-use crate::tui::app::InputMode::Editing;
-use crate::tui::views::{edit_modal, todo_list};
+use crate::tui::app::{App, InputMode};
+use crate::tui::views::keybindings;
+use crate::tui::views::todo_list;
 use ratatui::Frame;
 
-pub fn render(f: &mut Frame, app: &App) {
+pub fn render(f: &mut Frame, app: &mut App) {
     todo_list::render(f, app);
-    if app.mode == Editing {
-        edit_modal::render(f, app)
+    if app.mode == InputMode::HelpMenu {
+        keybindings::render(f)
     }
 }

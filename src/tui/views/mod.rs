@@ -1,2 +1,2 @@
-pub mod edit_modal;
+pub mod keybindings;
 pub mod todo_list;
